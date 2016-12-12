@@ -32,7 +32,7 @@ public class ExtractSift {
         System.out.println(desc.cols());
         System.out.println(desc.rows());
     }
-
+    //BufferedImage transform to Mat
     public static Mat bufferedImageToMat(BufferedImage bi) {
         Mat mat = new Mat(bi.getHeight(), bi.getWidth(), CvType.CV_8UC3);
         byte[] data = ((DataBufferByte) bi.getRaster().getDataBuffer()).getData();
