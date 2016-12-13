@@ -31,7 +31,7 @@ object SparkExtractSiftFromHBase {
       classOf[org.apache.hadoop.hbase.client.Result])
     hBaseRDD.foreach {
       tuple => {
-        val key = tuple._1.get()
+        //val key = tuple._1.get()
         val value = tuple._2
         val image = value.getColumnCells(Bytes.toBytes("image"), Bytes.toBytes("img")).get(0).getValueArray
         val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(image))
@@ -46,7 +46,7 @@ object SparkExtractSiftFromHBase {
         de.compute(test_mat, mkp, desc) //提取sift特征
         desc.toString
         val imagesTable: Table = connection.getTable(tableName)
-        val put: Put = new Put(Bytes.toBytes(row))
+        val put: Put = new Put(value.getRow)
         put.addImmutable(Bytes.toBytes("imagesTable"), Bytes.toBytes("image"), Bytes.toBytes(desc.toString))
         imagesTable.put(put)
       }
