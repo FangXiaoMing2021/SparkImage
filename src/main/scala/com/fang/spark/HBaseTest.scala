@@ -33,7 +33,7 @@ object HBaseTest {
     // in spark-defaults.conf or through --driver-class-path
     // command line option of spark-submit
    // val conf = HBaseConfiguration.create()
-    val tableName = "imagesTable"
+    val tableName = "stu"
     // Other options for configuring scan behavior are available. More information available at
     // http://hbase.apache.org/apidocs/org/apache/hadoop/hbase/mapreduce/TableInputFormat.html
     conf.set("hbase.zookeeper.property.clientPort", "2181")
@@ -50,7 +50,16 @@ object HBaseTest {
     val hBaseRDD = sc.newAPIHadoopRDD(conf, classOf[TableInputFormat],
       classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
       classOf[org.apache.hadoop.hbase.client.Result])
-    println(hBaseRDD.count())
+    hBaseRDD.foreach{
+      tuple =>{
+        val key = tuple._1.get()
+        val value = tuple._2
+        value.get
+        println(key.mkString)
+        println(tuple._2)
+      }
+    }
+    //println(hBaseRDD.count())
     sc.stop()
     admin.close()
   }
