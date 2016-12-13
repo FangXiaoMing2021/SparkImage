@@ -7,11 +7,8 @@ import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
-
 import java.io.IOException;
-import java.util.Map;
-import java.util.NavigableMap;
-
+//import java.util.NavigableMap;
 /**
  * Created by hadoop on 16-11-24.
  */
@@ -41,20 +38,20 @@ public class HBaseTestCase {
         Table table = connection.getTable(tableName);
         Get g = new Get(Bytes.toBytes(row));
         Result result = table.get(g);
-        NavigableMap<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> navigableMap = result.getMap();
-        for(Map.Entry<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> entry:navigableMap.entrySet()){
-            System.out.print(Bytes.toString(entry.getKey())+"#");
-            NavigableMap<byte[], NavigableMap<Long, byte[]>> map =entry.getValue();
-            for(Map.Entry<byte[], NavigableMap<Long, byte[]>> en:map.entrySet()){
-                System.out.print(Bytes.toString(en.getKey())+"##");
-                NavigableMap<Long, byte[]> ma = en.getValue();
-                for(Map.Entry<Long, byte[]>e: ma.entrySet()){
-                    System.out.print(e.getKey()+"###");
-                    System.out.println(Bytes.toString(e.getValue()));
-                }
-            }
-        }
-       // System.out.println("Get:"+result);
+//        NavigableMap<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> navigableMap = result.getMap();
+//        for(Map.Entry<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> entry:navigableMap.entrySet()){
+//            System.out.print(Bytes.toString(entry.getKey())+"#");
+//            NavigableMap<byte[], NavigableMap<Long, byte[]>> map =entry.getValue();
+//            for(Map.Entry<byte[], NavigableMap<Long, byte[]>> en:map.entrySet()){
+//                System.out.print(Bytes.toString(en.getKey())+"##");
+//                NavigableMap<Long, byte[]> ma = en.getValue();
+//                for(Map.Entry<Long, byte[]>e: ma.entrySet()){
+//                    System.out.print(e.getKey()+"###");
+//                    System.out.println(Bytes.toString(e.getValue()));
+//                }
+//            }
+//        }
+        System.out.println("Get:"+result);
     }
     //根据TableName获取整张表中的数据
     public static void scan(Connection connection,TableName tableName)throws Exception{
@@ -62,23 +59,23 @@ public class HBaseTestCase {
         Scan s = new Scan();
         ResultScanner rs = table.getScanner(s);
         //遍历打印表中的数据
-        for(Result r:rs){
-            NavigableMap<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> navigableMap = r.getMap();
-            for(Map.Entry<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> entry:navigableMap.entrySet()){
-                System.out.print(Bytes.toString(r.getRow())+":");
-                System.out.print(Bytes.toString(entry.getKey())+"#");
-                NavigableMap<byte[], NavigableMap<Long, byte[]>> map =entry.getValue();
-                for(Map.Entry<byte[], NavigableMap<Long, byte[]>> en:map.entrySet()){
-                    System.out.print(Bytes.toString(en.getKey())+"##");
-                    NavigableMap<Long, byte[]> ma = en.getValue();
-                    for(Map.Entry<Long, byte[]>e: ma.entrySet()){
-                        System.out.print(e.getKey()+"###");
-                        System.out.println(Bytes.toString(e.getValue()));
-                    }
-                }
-            }
-            System.out.println();
-        }
+//        for(Result r:rs){
+//            NavigableMap<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> navigableMap = r.getMap();
+//            for(Map.Entry<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> entry:navigableMap.entrySet()){
+//                System.out.print(Bytes.toString(r.getRow())+":");
+//                System.out.print(Bytes.toString(entry.getKey())+"#");
+//                NavigableMap<byte[], NavigableMap<Long, byte[]>> map =entry.getValue();
+//                for(Map.Entry<byte[], NavigableMap<Long, byte[]>> en:map.entrySet()){
+//                    System.out.print(Bytes.toString(en.getKey())+"##");
+//                    NavigableMap<Long, byte[]> ma = en.getValue();
+//                    for(Map.Entry<Long, byte[]>e: ma.entrySet()){
+//                        System.out.print(e.getKey()+"###");
+//                        System.out.println(Bytes.toString(e.getValue()));
+//                    }
+//                }
+//            }
+//            System.out.println();
+//        }
 
     }
     //删除表中的数据
