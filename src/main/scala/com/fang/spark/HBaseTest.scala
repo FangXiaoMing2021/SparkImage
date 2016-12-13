@@ -54,7 +54,6 @@ object HBaseTest {
       tuple =>{
         val key = tuple._1.get()
         val value = tuple._2
-        value.get
         println(key.mkString)
         println(tuple._2)
       }

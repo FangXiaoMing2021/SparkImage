@@ -22,7 +22,7 @@ object SiftTest {
         val portable:PortableDataStream= image._2
         val arr:Array[Byte] = portable.toArray()
         val bi:BufferedImage= ImageIO.read(new ByteArrayInputStream(arr))
-        ExtractSift.sift(portable)
+       // ExtractSift.sift(portable)
         val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8UC3)
         val data = bi.getRaster.getDataBuffer.asInstanceOf[DataBufferByte].getData
         test_mat.put(0, 0, data)
