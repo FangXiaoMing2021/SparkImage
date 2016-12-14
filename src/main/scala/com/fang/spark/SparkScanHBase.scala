@@ -15,12 +15,12 @@ import org.opencv.features2d.{DescriptorExtractor, FeatureDetector}
 /**
   * Created by fang on 16-12-13.
   */
-object SparkExtractSiftFromHBase {
-  private[spark] val hbaseConfig = HBaseConfiguration.create
+object SparkScanHBase {
   def main(args: Array[String]) {
     val sparkConf = new SparkConf().setAppName("SparkExtractSiftFromHBase").setMaster("local[4]")
     val sparkContext = new SparkContext(sparkConf)
     val tableName = TableName.valueOf("imagesTable")
+    val hbaseConfig = HBaseConfiguration.create
     hbaseConfig.set("hbase.zookeeper.property.clientPort", "2181")
     hbaseConfig.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
     hbaseConfig.set(TableInputFormat.INPUT_TABLE, tableName.toString)
@@ -29,8 +29,11 @@ object SparkExtractSiftFromHBase {
     val hBaseRDD = sparkContext.newAPIHadoopRDD(hbaseConfig, classOf[TableInputFormat],
       classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
       classOf[org.apache.hadoop.hbase.client.Result])
-    hBaseRDD.foreach{
+    hBaseRDD.foreachPartition {
+      iter => {
+        iter.foreach {
           tuple => {
+            //val key = tuple._1.get()
             val value = tuple._2
             val image = value.getColumnCells(Bytes.toBytes("image"), Bytes.toBytes("img")).get(0).getValueArray
             val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(image))
@@ -48,11 +51,12 @@ object SparkExtractSiftFromHBase {
             val put: Put = new Put(value.getRow)
             put.addImmutable(Bytes.toBytes("imagesTable"), Bytes.toBytes("image"), Bytes.toBytes(desc.toString))
             imagesTable.put(put)
+          }
+        }
       }
     }
-    admin.close()
     sparkContext.stop()
-
+    admin.close()
   }
 }
 

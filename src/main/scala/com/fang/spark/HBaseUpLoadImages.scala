@@ -13,24 +13,24 @@ object HBaseUpLoadImages {
     val sparkConf = new SparkConf().setAppName("HBaseUpLoadImages").setMaster("local")
     val sparkContext = new SparkContext(sparkConf)
     val imagesRDD = sparkContext.binaryFiles("/home/fang/images")
-//    val columnFaminlys :Array[String] = Array("image")
-//    createTable(tableName,columnFaminlys,connection)
+  // val columnFaminlys :Array[String] = Array("image")
+    //createTable(tableName,columnFaminlys,connection)
     imagesRDD.foreachPartition {
       iter => {
         val hbaseConfig = HBaseConfiguration.create()
         hbaseConfig.set("hbase.zookeeper.property.clientPort", "2181")
         hbaseConfig.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
         val connection: Connection = ConnectionFactory.createConnection(hbaseConfig);
-        val tableName = "imagesTable"
+        val tableName = "imagesTest"
         val table: Table = connection.getTable(TableName.valueOf(tableName))
         iter.foreach { imageFile =>
           val tempPath = imageFile._1.split("/")
           val len = tempPath.length
           val imageName = tempPath(len-1)
-          val imageBinary:scala.Array[scala.Byte]= imageFile._2.toArray()
+          val imageBinary:scala.Array[Byte]= imageFile._2.toArray()
           val put: Put = new Put(Bytes.toBytes(imageName))
-          put.addColumn(Bytes.toBytes("imagePath"), Bytes.toBytes("path"), Bytes.toBytes(imageFile._1))
-          put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("img"),imageBinary)
+          put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"),imageBinary)
+          put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("path"), Bytes.toBytes(imageFile._1))
           table.put(put)
         }
         connection.close()

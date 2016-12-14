@@ -6,7 +6,7 @@ import javax.imageio.ImageIO
 
 import org.apache.spark.input.PortableDataStream
 import org.apache.spark.{SparkConf, SparkContext}
-import org.opencv.core.{CvType, Mat, MatOfKeyPoint}
+import org.opencv.core.{Core, CvType, Mat, MatOfKeyPoint}
 import org.opencv.features2d.{DescriptorExtractor, FeatureDetector}
 
 /**
@@ -17,12 +17,13 @@ object SiftTest {
     val sparkConf = new SparkConf().setAppName("HBaseUpLoadImages").setMaster("local[3]")
     val sparkContext = new SparkContext(sparkConf)
     val imagesRDD = sparkContext.binaryFiles("/home/fang/images")
+    System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
     imagesRDD.foreach {
       image => {
         val portable:PortableDataStream= image._2
         val arr:Array[Byte] = portable.toArray()
         val bi:BufferedImage= ImageIO.read(new ByteArrayInputStream(arr))
-       // ExtractSift.sift(portable)
+        //ExtractSift.sift(portable)
         val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8UC3)
         val data = bi.getRaster.getDataBuffer.asInstanceOf[DataBufferByte].getData
         test_mat.put(0, 0, data)

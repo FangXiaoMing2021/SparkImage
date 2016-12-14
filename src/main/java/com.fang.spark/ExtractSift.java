@@ -39,4 +39,17 @@ public class ExtractSift {
         mat.put(0, 0, data);
         return mat;
     }
+    public static void siftFromBinary(byte[] image)throws IOException {
+        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+        BufferedImage bi = ImageIO.read(new ByteArrayInputStream(image));
+        Mat test_mat = bufferedImageToMat(bi);
+        Mat desc = new Mat();
+        FeatureDetector fd = FeatureDetector.create(FeatureDetector.SIFT);
+        MatOfKeyPoint mkp = new MatOfKeyPoint();
+        fd.detect(test_mat, mkp);
+        DescriptorExtractor de = DescriptorExtractor.create(DescriptorExtractor.SIFT);
+        de.compute(test_mat, mkp, desc);//提取sift特征
+        System.out.println(desc.cols());
+        System.out.println(desc.rows());
+    }
 }
