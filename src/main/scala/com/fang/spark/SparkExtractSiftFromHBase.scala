@@ -17,23 +17,20 @@
 
 // scalastyle:off println
 package com.fang.spark
-
 import java.awt.image.{BufferedImage, DataBufferByte}
-import java.io.ByteArrayInputStream
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException, ObjectOutputStream}
 import javax.imageio.ImageIO
 
-import org.apache.hadoop.hbase.client.{ConnectionFactory, Put, Table}
+import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.{HBaseConfiguration, HTableDescriptor, TableName}
 import org.apache.spark._
 import org.opencv.core.{Core, CvType, Mat, MatOfKeyPoint}
 import org.opencv.features2d.{DescriptorExtractor, FeatureDetector}
-
 object SparkExtractSiftFromHBase {
   //不使用成员变量的方式会出现 conf not serialization
   private[spark] val conf = HBaseConfiguration.create
-
   def main(args: Array[String]) {
     val sparkConf = new SparkConf().setAppName("HBaseTest").setMaster("local[2]")
     val sc = new SparkContext(sparkConf)
@@ -55,31 +52,74 @@ object SparkExtractSiftFromHBase {
         *没有使用foreachPartition出现下面的错误
         * org.apache.spark.SparkException: Task not serializable
          */
-        val connection = ConnectionFactory.createConnection(conf)
+        val connection:Connection= ConnectionFactory.createConnection(conf)
         iter.foreach {
           tuple => {
             val result = tuple._2
-            val image = result.getValue(Bytes.toBytes("image"), Bytes.toBytes("binary"))
-            val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(image))
-            val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8UC3)
-            val data = bi.getRaster.getDataBuffer.asInstanceOf[DataBufferByte].getData
-            test_mat.put(0, 0, data)
-            val desc = new Mat
-            val fd = FeatureDetector.create(FeatureDetector.SIFT)
-            val mkp = new MatOfKeyPoint
-            fd.detect(test_mat, mkp)
-            val de = DescriptorExtractor.create(DescriptorExtractor.SIFT)
-            de.compute(test_mat, mkp, desc) //提取sift特征
-            desc.toString
-            val imagesTable: Table = connection.getTable(TableName.valueOf(tableName))
-            val put: Put = new Put(result.getRow)
-            put.addImmutable(Bytes.toBytes("image"), Bytes.toBytes("sift"), Bytes.toBytes(desc.toString))
-            imagesTable.put(put)
+            //putSiftIntoHBase(tableName,result,connection)
+            getSiftFromHBase(tableName,result,connection)
+//            val image = result.getValue(Bytes.toBytes("image"), Bytes.toBytes("binary"))
+//            val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(image))
+//            val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8UC3)
+//            val data = bi.getRaster.getDataBuffer.asInstanceOf[DataBufferByte].getData
+//            test_mat.put(0, 0, data)
+//            val desc = new Mat
+//            val fd = FeatureDetector.create(FeatureDetector.SIFT)
+//            val mkp = new MatOfKeyPoint
+//            fd.detect(test_mat, mkp)
+//            val de = DescriptorExtractor.create(DescriptorExtractor.SIFT)
+//            de.compute(test_mat, mkp, desc) //提取sift特征
+//            val imagesTable: Table = connection.getTable(TableName.valueOf(tableName))
+//            val put: Put = new Put(result.getRow)
+//            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"),Utils.serializeMat(desc))
+//            imagesTable.put(put)
           }
         }
         connection.close()
       }
     }
     sc.stop()
+  }
+
+  def putSiftIntoHBase(tableName:String,result:Result, connection:Connection): Unit ={
+    val image = result.getValue(Bytes.toBytes("image"), Bytes.toBytes("binary"))
+    val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(image))
+    val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8UC3)
+    val data = bi.getRaster.getDataBuffer.asInstanceOf[DataBufferByte].getData
+    test_mat.put(0, 0, data)
+    val desc = new Mat
+    val fd = FeatureDetector.create(FeatureDetector.SIFT)
+    val mkp = new MatOfKeyPoint
+    fd.detect(test_mat, mkp)
+    val de = DescriptorExtractor.create(DescriptorExtractor.SIFT)
+    de.compute(test_mat, mkp, desc) //提取sift特征
+    val imagesTable: Table = connection.getTable(TableName.valueOf(tableName))
+    val put: Put = new Put(result.getRow)
+    put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"),Utils.serializeMat(desc))
+    imagesTable.put(put)
+  }
+
+  def getSiftFromHBase(tableName:String,result:Result,connection:Connection): Unit ={
+    val siftByte= result.getValue(Bytes.toBytes("image"),Bytes.toBytes("sift"))
+    val siftArray:Array[Float]=Utils.deserializeMat(siftByte)
+    println(siftArray)
+  }
+
+  def serializeObject(o: Any): Array[Byte] = {
+    val bos = new ByteArrayOutputStream
+    try {
+      val out = new ObjectOutputStream(bos)
+      out.writeObject(o)
+      out.close()
+      // Get the bytes of the serialized object
+      val buf = bos.toByteArray
+      buf
+    }
+    catch {
+      case ioe: IOException => {
+        ioe.printStackTrace()
+        null
+      }
+    }
   }
 }
