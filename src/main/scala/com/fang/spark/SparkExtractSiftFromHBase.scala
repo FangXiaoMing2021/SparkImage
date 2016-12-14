@@ -1,38 +1,65 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// scalastyle:off println
 package com.fang.spark
 
 import java.awt.image.{BufferedImage, DataBufferByte}
 import java.io.ByteArrayInputStream
 import javax.imageio.ImageIO
 
-import org.apache.hadoop.hbase.client.{Connection, ConnectionFactory, Put, Table}
+import org.apache.hadoop.hbase.client.{ConnectionFactory, Put, Table}
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.util.Bytes
-import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
-import org.apache.spark.{SparkConf, SparkContext}
-import org.opencv.core.{CvType, Mat, MatOfKeyPoint}
+import org.apache.hadoop.hbase.{HBaseConfiguration, HTableDescriptor, TableName}
+import org.apache.spark._
+import org.opencv.core.{Core, CvType, Mat, MatOfKeyPoint}
 import org.opencv.features2d.{DescriptorExtractor, FeatureDetector}
 
-/**
-  * Created by fang on 16-12-13.
-  */
 object SparkExtractSiftFromHBase {
-  private[spark] val hbaseConfig = HBaseConfiguration.create
+  //不使用成员变量的方式会出现 conf not serialization
+  private[spark] val conf = HBaseConfiguration.create
+
   def main(args: Array[String]) {
-    val sparkConf = new SparkConf().setAppName("SparkExtractSiftFromHBase").setMaster("local[4]")
-    val sparkContext = new SparkContext(sparkConf)
-    val tableName = TableName.valueOf("imagesTable")
-    hbaseConfig.set("hbase.zookeeper.property.clientPort", "2181")
-    hbaseConfig.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
-    hbaseConfig.set(TableInputFormat.INPUT_TABLE, tableName.toString)
-    val connection: Connection = ConnectionFactory.createConnection(hbaseConfig)
-    val admin = connection.getAdmin()
-    val hBaseRDD = sparkContext.newAPIHadoopRDD(hbaseConfig, classOf[TableInputFormat],
+    val sparkConf = new SparkConf().setAppName("HBaseTest").setMaster("local[2]")
+    val sc = new SparkContext(sparkConf)
+    val tableName = "imagesTest"
+    conf.set("hbase.zookeeper.property.clientPort", "2181")
+    conf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
+    conf.set(TableInputFormat.INPUT_TABLE, tableName)
+    val hBaseRDD = sc.newAPIHadoopRDD(conf, classOf[TableInputFormat],
       classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
       classOf[org.apache.hadoop.hbase.client.Result])
-    hBaseRDD.foreach{
+    /*
+      *  没加载 System.loadLibrary(Core.NATIVE_LIBRARY_NAME)导致下面的错误，MD
+      *  UnsatisfiedLinkError: Native method not found: org.opencv.core.Mat.n_Mat:()J
+      */
+    System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
+    hBaseRDD.foreachPartition {
+      iter => {
+        /*
+        *没有使用foreachPartition出现下面的错误
+        * org.apache.spark.SparkException: Task not serializable
+         */
+        val connection = ConnectionFactory.createConnection(conf)
+        iter.foreach {
           tuple => {
-            val value = tuple._2
-            val image = value.getColumnCells(Bytes.toBytes("image"), Bytes.toBytes("img")).get(0).getValueArray
+            val result = tuple._2
+            val image = result.getValue(Bytes.toBytes("image"), Bytes.toBytes("binary"))
             val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(image))
             val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8UC3)
             val data = bi.getRaster.getDataBuffer.asInstanceOf[DataBufferByte].getData
@@ -44,16 +71,15 @@ object SparkExtractSiftFromHBase {
             val de = DescriptorExtractor.create(DescriptorExtractor.SIFT)
             de.compute(test_mat, mkp, desc) //提取sift特征
             desc.toString
-            val imagesTable: Table = connection.getTable(tableName)
-            val put: Put = new Put(value.getRow)
-            put.addImmutable(Bytes.toBytes("imagesTable"), Bytes.toBytes("image"), Bytes.toBytes(desc.toString))
+            val imagesTable: Table = connection.getTable(TableName.valueOf(tableName))
+            val put: Put = new Put(result.getRow)
+            put.addImmutable(Bytes.toBytes("image"), Bytes.toBytes("sift"), Bytes.toBytes(desc.toString))
             imagesTable.put(put)
+          }
+        }
+        connection.close()
       }
     }
-    admin.close()
-    sparkContext.stop()
-
+    sc.stop()
   }
 }
-
-
