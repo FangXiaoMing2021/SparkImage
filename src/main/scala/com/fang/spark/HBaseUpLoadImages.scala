@@ -10,9 +10,9 @@ import org.apache.spark.{SparkConf, SparkContext}
   */
 object HBaseUpLoadImages {
   def main(args: Array[String]): Unit = {
-    val sparkConf = new SparkConf().setAppName("HBaseUpLoadImages").setMaster("local")
+    val sparkConf = new SparkConf().setAppName("HBaseUpLoadImages").setMaster("local[2]")
     val sparkContext = new SparkContext(sparkConf)
-    val imagesRDD = sparkContext.binaryFiles("/home/fang/images")
+    val imagesRDD = sparkContext.binaryFiles("/home/fang/images/train/1")
   // val columnFaminlys :Array[String] = Array("image")
     //createTable(tableName,columnFaminlys,connection)
     imagesRDD.foreachPartition {

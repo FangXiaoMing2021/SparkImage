@@ -58,6 +58,7 @@ public class HBaseTestCase {
         Table table = connection.getTable(tableName);
         Scan s = new Scan();
         ResultScanner rs = table.getScanner(s);
+
         //遍历打印表中的数据
 //        for(Result r:rs){
 //            NavigableMap<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> navigableMap = r.getMap();

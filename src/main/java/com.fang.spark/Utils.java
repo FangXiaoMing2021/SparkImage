@@ -24,10 +24,10 @@ public class Utils {
         }
     }
 
-    public static float[] deserializeMat(byte[] b) {
+    public static double[] deserializeMat(byte[] b) {
         try {
             ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(b));
-            float data[] = (float[])in.readObject();
+            double data[] = (double[])in.readObject();
             in.close();
             return data;
         } catch (ClassNotFoundException cnfe) {

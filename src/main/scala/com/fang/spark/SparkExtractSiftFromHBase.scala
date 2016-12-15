@@ -23,7 +23,8 @@ import javax.imageio.ImageIO
 
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
-import org.apache.hadoop.hbase.util.Bytes
+import org.apache.hadoop.hbase.protobuf.ProtobufUtil
+import org.apache.hadoop.hbase.util.{Base64, Bytes}
 import org.apache.hadoop.hbase.{HBaseConfiguration, HTableDescriptor, TableName}
 import org.apache.spark._
 import org.opencv.core.{Core, CvType, Mat, MatOfKeyPoint}
@@ -101,7 +102,12 @@ object SparkExtractSiftFromHBase {
 
   def getSiftFromHBase(tableName:String,result:Result,connection:Connection): Unit ={
     val siftByte= result.getValue(Bytes.toBytes("image"),Bytes.toBytes("sift"))
-    val siftArray:Array[Float]=Utils.deserializeMat(siftByte)
+    val siftArray:Array[Double]=Utils.deserializeMat(siftByte)
+//    var scan = new Scan()
+//    scan.addFamily(Bytes.toBytes("cf"))
+//    var proto = ProtobufUtil.toScan(scan)
+//    var ScanToString = Base64.encodeBytes(proto.toByteArray())
+//    hConf.set(TableInputFormat.SCAN, ScanToString)
     for(i <- 0 to 128){
       print(siftArray(i)+",")
     }
