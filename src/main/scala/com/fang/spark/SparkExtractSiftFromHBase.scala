@@ -102,13 +102,11 @@ object SparkExtractSiftFromHBase {
   def getSiftFromHBase(tableName:String,result:Result,connection:Connection): Unit ={
     val siftByte= result.getValue(Bytes.toBytes("image"),Bytes.toBytes("sift"))
     val siftArray:Array[Float]=Utils.deserializeMat(siftByte)
-    siftArray.foreach{
-      i=>
-        print(i+" ")
-        if(i % 128==0){
-          println()
-        }
+    for(i <- 0 to 128){
+      print(siftArray(i)+",")
     }
+    println(siftArray.length)
+    //println(siftArray.size)
   }
 
   def serializeObject(o: Any): Array[Byte] = {

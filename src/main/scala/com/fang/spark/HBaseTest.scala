@@ -18,6 +18,8 @@
 // scalastyle:off println
 package com.fang.spark
 
+import java.io.{ByteArrayInputStream, IOException, ObjectInputStream}
+
 import org.apache.hadoop.hbase.client.HBaseAdmin
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.{HBaseConfiguration, HTableDescriptor, TableName}

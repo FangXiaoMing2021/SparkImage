@@ -33,10 +33,11 @@ object SiftTest {
         fd.detect(test_mat, mkp)
         val de = DescriptorExtractor.create(DescriptorExtractor.SIFT)
         de.compute(test_mat, mkp, desc) //提取sift特征
-        println(desc.channels())
-        println(desc.total())
-        println(desc.rows())
-        println(desc.cols())
+        println(desc.row(0).size())
+        println( desc.row(0).dump())
+//        println(desc.total())
+//        println(desc.rows())
+//        println(desc.cols())
         //println(desc.dump())
         //val mat :Mat= new Mat(img.getHeight(),img.getWidth(), CvType.CV_8UC3);
       }
