@@ -1,5 +1,6 @@
-package com.fang.spark
-import org.apache.spark.{SparkConf, SparkContext}
+package com.fang.spark.demo
+
+import org.apache.spark.SparkConf
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 /**
   * Created by fang on 16-12-4.

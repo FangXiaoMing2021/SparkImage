@@ -1,10 +1,10 @@
-package com.fang.spark
+package com.fang.spark.exampleCode
 
 import java.awt.image.{BufferedImage, DataBufferByte}
 import java.io.ByteArrayInputStream
 import javax.imageio.ImageIO
 
-import org.apache.hadoop.hbase.util.Bytes
+import com.fang.spark.Utils
 import org.apache.spark.input.PortableDataStream
 import org.apache.spark.{SparkConf, SparkContext}
 import org.opencv.core.{Core, CvType, Mat, MatOfKeyPoint}
@@ -12,8 +12,9 @@ import org.opencv.features2d.{DescriptorExtractor, FeatureDetector}
 
 /**
   * Created by fang on 16-12-12.
+  * 计算本地图像数据的sift特征值
   */
-object SiftTest {
+object ComputeSiftFromLocalFile {
   def main(args: Array[String]): Unit = {
     val sparkConf = new SparkConf().setAppName("HBaseUpLoadImages").setMaster("local[4]")
     val sparkContext = new SparkContext(sparkConf)
@@ -37,7 +38,6 @@ object SiftTest {
 //        println(desc.row(0).size())
 //        println( desc.row(0).dump())
 //        println(desc.total())
-
         println("-------------------")
         println(bi.getColorModel.getNumComponents)
         println(image._1)

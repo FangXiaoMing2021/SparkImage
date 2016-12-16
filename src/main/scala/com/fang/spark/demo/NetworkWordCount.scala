@@ -16,11 +16,9 @@
  */
 
 // scalastyle:off println
-package com.fang.spark
+package com.fang.spark.demo
 
 import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.storage.StorageLevel
-import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 /**
  * Counts words in UTF8 encoded, '\n' delimited text received from the network every second.

@@ -1,11 +1,10 @@
-package com.fang.spark
+package com.fang.spark.exampleCode
 
 /**
   * Created by fang on 16-12-15.
+  * 对HBase表中的sift数据进行sift模型训练测试
   */
-
-import java.util
-
+import com.fang.spark.Utils
 import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.client.Scan
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
@@ -15,7 +14,7 @@ import org.apache.spark.mllib.clustering.{KMeans, KMeansModel}
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.{SparkConf, SparkContext}
 
-object HbaseRDD extends App {
+object KMeansTestForSift extends App {
 
   val sparkConf = new SparkConf().setMaster("local[4]")
     .setAppName("My App")
@@ -71,5 +70,4 @@ object HbaseRDD extends App {
     println("The data " + testDataLine.toString + " belongs to cluster " + predictedClusterIndex)
   })
   println("Spark MLlib K-means clustering test finished.")
-
 }

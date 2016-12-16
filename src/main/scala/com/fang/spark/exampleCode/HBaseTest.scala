@@ -16,16 +16,17 @@
  */
 
 // scalastyle:off println
-package com.fang.spark
+package com.fang.spark.exampleCode
 
-import java.io.{ByteArrayInputStream, IOException, ObjectInputStream}
-
-import org.apache.hadoop.hbase.client.HBaseAdmin
+import org.apache.hadoop.hbase.client.{Admin, Connection, ConnectionFactory}
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
-import org.apache.hadoop.hbase.{HBaseConfiguration, HTableDescriptor, TableName}
+import org.apache.hadoop.hbase.{HBaseConfiguration, HColumnDescriptor, HTableDescriptor, TableName}
 import org.apache.spark._
 
-
+/**
+  * create by fangfeikun on 2016.12.16
+  * 测试HBase表中的数据
+  */
 object HBaseTest {
   def main(args: Array[String]) {
     val sparkConf = new SparkConf().setAppName("HBaseTest").setMaster("local[3]")
@@ -43,12 +44,13 @@ object HBaseTest {
     conf.set("hbase.zookeeper.property.clientPort", "2181")
     conf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
     // Initialize hBase table if necessary
-    val admin = new HBaseAdmin(conf)
-    if (!admin.isTableAvailable("imagesTable")) {
-      val tableDesc = new HTableDescriptor(TableName.valueOf(args(0)))
-      admin.createTable(tableDesc)
+    val connection = ConnectionFactory.createConnection(conf)
+    val admin = connection.getAdmin
+    if (!admin.tableExists(TableName.valueOf("imagesTable"))) {
+      val columnFamilys= List("image")
+      createTable("imagesTable",columnFamilys,connection)
     }
-
+    //读取HBase中表的数据
     val hBaseRDD = sc.newAPIHadoopRDD(conf, classOf[TableInputFormat],
       classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
       classOf[org.apache.hadoop.hbase.client.Result])
@@ -57,6 +59,25 @@ object HBaseTest {
 
     sc.stop()
     admin.close()
+  }
+  //创建HBase表
+  def createTable(tableName: String, columnFamilys: List[String], connection: Connection): Unit = {
+    val admin: Admin = connection.getAdmin
+    if (admin.tableExists(TableName.valueOf(tableName))) {
+      println("表" + tableName + "已经存在")
+      return
+    } else {
+      val tableDesc: HTableDescriptor = new HTableDescriptor(TableName.valueOf(tableName))
+      for (columnFaily <- columnFamilys) {
+        tableDesc.addFamily(new HColumnDescriptor(columnFaily))
+      }
+      admin.createTable(tableDesc)
+      println("创建表成功")
+    }
+  }
+  def isExistTable(tableName: String, connection: Connection) {
+    val admin: Admin = connection.getAdmin
+    admin.tableExists(TableName.valueOf(tableName))
   }
 }
 // scalastyle:on println

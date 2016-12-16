@@ -1,12 +1,12 @@
-package com.fang.spark
+package com.fang.spark.exampleCode
 
-import org.apache.spark.mllib.clustering.KMeansModel
-import org.apache.spark.mllib.clustering.KMeans
+import org.apache.spark.mllib.clustering.{KMeans, KMeansModel}
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
   * Created by fang on 16-12-15.
+  * 对测试数据进行KMeans聚类，用作测试
   */
 object KMeansCluster {
   def main(args: Array[String]) {

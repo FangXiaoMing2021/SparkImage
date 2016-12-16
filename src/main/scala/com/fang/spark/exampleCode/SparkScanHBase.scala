@@ -1,16 +1,15 @@
-package com.fang.spark
+package com.fang.spark.exampleCode
 
-import java.awt.image.{BufferedImage, DataBufferByte}
+import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import javax.imageio.ImageIO
 
-import org.apache.hadoop.hbase.client.{Connection, ConnectionFactory, Put, Table}
+import org.apache.hadoop.hbase.client.{Connection, ConnectionFactory}
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import org.apache.spark.{SparkConf, SparkContext}
-import org.opencv.core.{Core, CvType, Mat, MatOfKeyPoint}
-import org.opencv.features2d.{DescriptorExtractor, FeatureDetector}
+import org.opencv.core.{Core, CvType, Mat}
 
 /**
   * Created by fang on 16-12-13.
