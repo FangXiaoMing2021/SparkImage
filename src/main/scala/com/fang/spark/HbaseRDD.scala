@@ -37,16 +37,16 @@ object HbaseRDD extends App {
     .flatMap {
       result =>
         val siftByte = result.getValue(Bytes.toBytes("image"), Bytes.toBytes("sift"))
-        val siftArray: Array[Double] = Utils.deserializeMat(siftByte)
+        val siftArray: Array[Float] = Utils.deserializeMat(siftByte)
         val size = siftArray.length / 128
-        val siftTwoDim = new Array[Array[Double]](size)
+        val siftTwoDim = new Array[Array[Float]](size)
         for (i <- 0 until size) {
-          val xs: Array[Double] = new Array[Double](128)
+          val xs: Array[Float] = new Array[Float](128)
           siftArray.copyToArray(xs, i * 128, 128)
           siftTwoDim(i) = xs
         }
         siftTwoDim
-    }.map(data=>Vectors.dense(data))
+    }.map(data=>Vectors.dense(data.map(i=>i.toDouble)))
   val numClusters = 8
   val numIterations = 30
   val runTimes = 3

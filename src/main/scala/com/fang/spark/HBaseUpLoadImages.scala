@@ -1,8 +1,14 @@
 package com.fang.spark
 
+import java.awt.image.BufferedImage
+import java.io.ByteArrayInputStream
+import javax.imageio.ImageIO
+
 import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.client._
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.hbase.util.Bytes
+import org.apache.hadoop.io.Text
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
@@ -10,10 +16,11 @@ import org.apache.spark.{SparkConf, SparkContext}
   */
 object HBaseUpLoadImages {
   def main(args: Array[String]): Unit = {
-    val sparkConf = new SparkConf().setAppName("HBaseUpLoadImages").setMaster("local[2]")
+    val sparkConf = new SparkConf().setAppName("HBaseUpLoadImages").setMaster("local[4]")
     val sparkContext = new SparkContext(sparkConf)
-    val imagesRDD = sparkContext.binaryFiles("/home/fang/images/train/1")
-  // val columnFaminlys :Array[String] = Array("image")
+    val imagesRDD = sparkContext.binaryFiles("/home/fang/images/")
+    // val imagesRDD = sparkContext.newAPIHadoopFile[Text, BufferedImage, ImmutableBytesWritable]("/home/fang/images/train/1")
+    // val columnFaminlys :Array[String] = Array("image")
     //createTable(tableName,columnFaminlys,connection)
     imagesRDD.foreachPartition {
       iter => {
@@ -24,12 +31,14 @@ object HBaseUpLoadImages {
         val tableName = "imagesTest"
         val table: Table = connection.getTable(TableName.valueOf(tableName))
         iter.foreach { imageFile =>
+          //          val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(imageFile._2.toArray()))
+          //          println(bi.getColorModel)
           val tempPath = imageFile._1.split("/")
           val len = tempPath.length
-          val imageName = tempPath(len-1)
-          val imageBinary:scala.Array[Byte]= imageFile._2.toArray()
+          val imageName = tempPath(len - 1)
+          val imageBinary: scala.Array[Byte] = imageFile._2.toArray()
           val put: Put = new Put(Bytes.toBytes(imageName))
-          put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"),imageBinary)
+          put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), imageBinary)
           put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("path"), Bytes.toBytes(imageFile._1))
           table.put(put)
         }

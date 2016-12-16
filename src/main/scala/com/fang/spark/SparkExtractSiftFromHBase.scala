@@ -33,7 +33,7 @@ object SparkExtractSiftFromHBase {
   //不使用成员变量的方式会出现 conf not serialization
   private[spark] val conf = HBaseConfiguration.create
   def main(args: Array[String]) {
-    val sparkConf = new SparkConf().setAppName("HBaseTest").setMaster("local[2]")
+    val sparkConf = new SparkConf().setAppName("HBaseTest").setMaster("local[4]")
     val sc = new SparkContext(sparkConf)
     val tableName = "imagesTest"
     conf.set("hbase.zookeeper.property.clientPort", "2181")
@@ -57,8 +57,8 @@ object SparkExtractSiftFromHBase {
         iter.foreach {
           tuple => {
             val result = tuple._2
-            //putSiftIntoHBase(tableName,result,connection)
-            getSiftFromHBase(tableName,result,connection)
+            putSiftIntoHBase(tableName,result,connection)
+//            getSiftFromHBase(tableName,result,connection)
 //            val image = result.getValue(Bytes.toBytes("image"), Bytes.toBytes("binary"))
 //            val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(image))
 //            val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8UC3)
@@ -85,24 +85,31 @@ object SparkExtractSiftFromHBase {
   def putSiftIntoHBase(tableName:String,result:Result, connection:Connection): Unit ={
     val image = result.getValue(Bytes.toBytes("image"), Bytes.toBytes("binary"))
     val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(image))
-    val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8UC3)
+    val test_mat = new Mat(bi.getHeight, bi.getWidth,CvType.CV_8U)
+    //java.lang.UnsupportedOperationException:
+    // Provided data element number (188000) should be multiple of the Mat channels count (3)
+    //更改CvType.CV_8UC3为CvType.CV_8U,解决上面错误
+    // val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8UC3)
     val data = bi.getRaster.getDataBuffer.asInstanceOf[DataBufferByte].getData
-    test_mat.put(0, 0, data)
-    val desc = new Mat
-    val fd = FeatureDetector.create(FeatureDetector.SIFT)
-    val mkp = new MatOfKeyPoint
-    fd.detect(test_mat, mkp)
-    val de = DescriptorExtractor.create(DescriptorExtractor.SIFT)
-    de.compute(test_mat, mkp, desc) //提取sift特征
-    val imagesTable: Table = connection.getTable(TableName.valueOf(tableName))
-    val put: Put = new Put(result.getRow)
-    put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"),Utils.serializeMat(desc))
-    imagesTable.put(put)
+   // if(bi.getColorModel.getNumComponents==3) {
+      test_mat.put(0, 0, data)
+      val desc = new Mat
+      val fd = FeatureDetector.create(FeatureDetector.SIFT)
+      val mkp = new MatOfKeyPoint
+      fd.detect(test_mat, mkp)
+      val de = DescriptorExtractor.create(DescriptorExtractor.SIFT)
+      de.compute(test_mat, mkp, desc)
+      //提取sift特征
+      val imagesTable: Table = connection.getTable(TableName.valueOf(tableName))
+      val put: Put = new Put(result.getRow)
+      put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), Utils.serializeMat(desc))
+      imagesTable.put(put)
+   // }
   }
 
   def getSiftFromHBase(tableName:String,result:Result,connection:Connection): Unit ={
     val siftByte= result.getValue(Bytes.toBytes("image"),Bytes.toBytes("sift"))
-    val siftArray:Array[Double]=Utils.deserializeMat(siftByte)
+    val siftArray:Array[Float]=Utils.deserializeMat(siftByte)
 //    var scan = new Scan()
 //    scan.addFamily(Bytes.toBytes("cf"))
 //    var proto = ProtobufUtil.toScan(scan)

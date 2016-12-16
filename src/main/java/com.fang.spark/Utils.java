@@ -23,11 +23,11 @@ public class Utils {
             return null;
         }
     }
-
-    public static double[] deserializeMat(byte[] b) {
+//使用int，double都出错，改为float
+    public static float[] deserializeMat(byte[] b) {
         try {
             ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(b));
-            double data[] = (double[])in.readObject();
+            float data[] = (float[])in.readObject();
             in.close();
             return data;
         } catch (ClassNotFoundException cnfe) {
@@ -90,7 +90,8 @@ public class Utils {
         }
         return null;
     }
-
+    //java.lang.UnsupportedOperationException: Mat data type is not compatible: 0
+    //没有进行异常处理，出现上面错误，原因是没有提取到特征值，mat为空
     public static byte[] serializeMat(Mat mat) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try {
