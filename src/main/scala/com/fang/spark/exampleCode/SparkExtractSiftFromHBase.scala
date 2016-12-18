@@ -16,16 +16,17 @@
  */
 
 // scalastyle:off println
-package com.fang.spark
+package com.fang.spark.exampleCode
+
 import java.awt.image.{BufferedImage, DataBufferByte}
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException, ObjectOutputStream}
 import javax.imageio.ImageIO
 
+import com.fang.spark.Utils
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
-import org.apache.hadoop.hbase.protobuf.ProtobufUtil
-import org.apache.hadoop.hbase.util.{Base64, Bytes}
-import org.apache.hadoop.hbase.{HBaseConfiguration, HTableDescriptor, TableName}
+import org.apache.hadoop.hbase.util.Bytes
+import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import org.apache.spark._
 import org.opencv.core.{Core, CvType, Mat, MatOfKeyPoint}
 import org.opencv.features2d.{DescriptorExtractor, FeatureDetector}

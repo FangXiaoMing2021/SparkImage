@@ -36,23 +36,30 @@ object KMeansForSiftInHBase extends App {
       result =>
         val siftByte = result.getValue(Bytes.toBytes("image"), Bytes.toBytes("sift"))
         val siftArray: Array[Float] = Utils.deserializeMat(siftByte)
+        println(siftArray.length)
         val size = siftArray.length / 128
+        println(size)
         val siftTwoDim = new Array[Array[Float]](size)
-        for (i <- 0 until size) {
+        for (i <- 0 to size-1) {
           val xs: Array[Float] = new Array[Float](128)
-          siftArray.copyToArray(xs, i * 128, 128)
+//          println(i*128)
+//          siftArray.copyToArray(xs, i*128, 128)
+//          siftTwoDim(i) = xs
+          for(j<-0 to 127){
+            xs(j) = siftByte(i*128+j)
+          }
           siftTwoDim(i) = xs
         }
         siftTwoDim
     }.map(data=>Vectors.dense(data.map(i=>i.toDouble)))
-  val numClusters = 8
+  val numClusters = 4
   val numIterations = 30
   val runTimes = 3
   var clusterIndex: Int = 0
   val clusters: KMeansModel = KMeans.train(siftRDD, numClusters, numIterations, runTimes)
   println("Cluster Number:" + clusters.clusterCenters.length)
   println("Cluster Centers Information Overview:")
-  clusters.save(sc,"src/main/resources/model.txt")
+  clusters.save(sc,"src/main/resources/KMeansModel")
   clusters.clusterCenters.foreach(
     x => {
       println("Center Point of Cluster " + clusterIndex + ":")
@@ -60,13 +67,14 @@ object KMeansForSiftInHBase extends App {
       clusterIndex += 1
     })
   //begin to check which cluster each test data belongs to based on the clustering result
-  val rawTestData = sc.textFile("src/main/resources/customerTest.txt")
-  val parsedTestData = rawTestData.map(line => {
-    Vectors.dense(line.split(",").map(_.trim).filter(!"".equals(_)).map(_.toDouble))
-  })
-  parsedTestData.collect().foreach(testDataLine => {
-    val predictedClusterIndex: Int = clusters.predict(testDataLine)
-    println("The data " + testDataLine.toString + " belongs to cluster " + predictedClusterIndex)
-  })
-  println("Spark MLlib K-means clustering test finished.")
+//  val rawTestData = sc.textFile("src/main/resources/customerTest.txt")
+//  val parsedTestData = rawTestData.map(line => {
+//    Vectors.dense(line.split(",").map(_.trim).filter(!"".equals(_)).map(_.toDouble))
+//  })
+//  parsedTestData.collect().foreach(testDataLine => {
+//    val predictedClusterIndex: Int = clusters.predict(testDataLine)
+//    println("The data " + testDataLine.toString + " belongs to cluster " + predictedClusterIndex)
+//  })
+//  println("Spark MLlib K-means clustering test finished.")
+
 }

@@ -18,8 +18,10 @@
 // scalastyle:off println
 package com.fang.spark.exampleCode
 
-import org.apache.hadoop.hbase.client.{Admin, Connection, ConnectionFactory}
+import org.apache.hadoop.hbase.client.{Admin, Connection, ConnectionFactory, Scan}
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
+import org.apache.hadoop.hbase.protobuf.ProtobufUtil
+import org.apache.hadoop.hbase.util.{Base64, Bytes}
 import org.apache.hadoop.hbase.{HBaseConfiguration, HColumnDescriptor, HTableDescriptor, TableName}
 import org.apache.spark._
 
@@ -36,22 +38,27 @@ object HBaseTest {
     // in spark-defaults.conf or through --driver-class-path
     // command line option of spark-submit
 
-    val conf = HBaseConfiguration.create()
+    val hbaseConf = HBaseConfiguration.create()
 
     // Other options for configuring scan behavior are available. More information available at
     // http://hbase.apache.org/apidocs/org/apache/hadoop/hbase/mapreduce/TableInputFormat.html
-    conf.set(TableInputFormat.INPUT_TABLE, "imagesTest")
-    conf.set("hbase.zookeeper.property.clientPort", "2181")
-    conf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
+    hbaseConf.set(TableInputFormat.INPUT_TABLE, "imagesTest")
+    hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
+    hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
+    val scan = new Scan()
+    scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"))
+    val proto = ProtobufUtil.toScan(scan)
+    val ScanToString = Base64.encodeBytes(proto.toByteArray())
+    hbaseConf.set(TableInputFormat.SCAN, ScanToString)
     // Initialize hBase table if necessary
-    val connection = ConnectionFactory.createConnection(conf)
+    val connection = ConnectionFactory.createConnection(hbaseConf)
     val admin = connection.getAdmin
     if (!admin.tableExists(TableName.valueOf("imagesTable"))) {
       val columnFamilys= List("image")
       createTable("imagesTable",columnFamilys,connection)
     }
     //读取HBase中表的数据
-    val hBaseRDD = sc.newAPIHadoopRDD(conf, classOf[TableInputFormat],
+    val hBaseRDD = sc.newAPIHadoopRDD(hbaseConf, classOf[TableInputFormat],
       classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
       classOf[org.apache.hadoop.hbase.client.Result])
 
