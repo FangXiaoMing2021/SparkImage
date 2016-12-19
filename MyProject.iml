@@ -219,5 +219,9 @@
     <orderEntry type="library" name="Maven: com.lmax:disruptor:3.3.0" level="project" />
     <orderEntry type="library" name="Maven: org.apache.hadoop:hadoop-hdfs:2.5.1" level="project" />
     <orderEntry type="library" name="Maven: commons-daemon:commons-daemon:1.0.13" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.spark:spark-streaming-kafka_2.10:1.6.1" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.kafka:kafka_2.10:0.8.2.1" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.kafka:kafka-clients:0.8.2.1" level="project" />
+    <orderEntry type="library" name="Maven: com.101tec:zkclient:0.3" level="project" />
   </component>
 </module>
