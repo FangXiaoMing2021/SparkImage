@@ -70,23 +70,13 @@ object KMeansForSiftInHBase extends App {
       println(x)
       clusterIndex += 1
     })
-  //begin to check which cluster each test data belongs to based on the clustering result
-  //  val rawTestData = sc.textFile("src/main/resources/customerTest.txt")
-  //  val parsedTestData = rawTestData.map(line => {
-  //    Vectors.dense(line.split(",").map(_.trim).filter(!"".equals(_)).map(_.toDouble))
-  //  })
-  //  parsedTestData.collect().foreach(testDataLine => {
-  //    val predictedClusterIndex: Int = clusters.predict(testDataLine)
-  //    println("The data " + testDataLine.toString + " belongs to cluster " + predictedClusterIndex)
-  //  })
-  //  println("Spark MLlib K-means clustering test finished.")
   val histogramRDD = hbaseRDD.foreachPartition {
     iter => {
-      val connection: Connection = ConnectionFactory.createConnection(hbaseConf);
+      val connection: Connection = ConnectionFactory.createConnection(hbaseConf)
       val table: Table = connection.getTable(TableName.valueOf(tableName))
       iter.foreach {
         result =>
-          val rowKey = Bytes.toString(result._2.getRow())
+         // val rowKey = Bytes.toString(result._2.getRow())
           val histogramArray = new Array[Int](numClusters)
           val siftByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("sift"))
           val siftArray: Array[Float] = Utils.deserializeMat(siftByte)
