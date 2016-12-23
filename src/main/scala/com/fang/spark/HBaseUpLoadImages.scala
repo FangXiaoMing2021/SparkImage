@@ -27,7 +27,8 @@ object HBaseUpLoadImages {
       set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     val sparkContext = new SparkContext(sparkConf)
     //TODO 单机测试情况下，图片文件太多，程序运行失败，打出hs_err_pid***_log日志，具体情况不明
-    val imagesRDD = sparkContext.binaryFiles("/home/fang/images/train/test")
+    //Error in `/usr/lib/jvm/jdk1.8.0_77/bin/java': malloc(): memory corruption: 0x00007fef7517d760 ***
+    val imagesRDD = sparkContext.binaryFiles("/home/fang/images/train/1")
     System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
     // val imagesRDD = sparkContext.newAPIHadoopFile[Text, BufferedImage, ImmutableBytesWritable]("/home/fang/images/train/1")
     // val columnFaminlys :Array[String] = Array("image")
