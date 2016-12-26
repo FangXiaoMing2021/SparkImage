@@ -28,6 +28,11 @@ object HBaseUpLoadImages {
     val sparkContext = new SparkContext(sparkConf)
     //TODO 单机测试情况下，图片文件太多，程序运行失败，打出hs_err_pid***_log日志，具体情况不明
     //Error in `/usr/lib/jvm/jdk1.8.0_77/bin/java': malloc(): memory corruption: 0x00007fef7517d760 ***
+    //train/1 出错
+    //train/2 正常
+    //train/3 出错,打印日志 Failed to write core dump. Core dumps have been disabled. To enable core dumping, try "ulimit -c unlimited" before starting Java again
+    //内存不够时出现溢出
+    //先运行ulimit -c unlimited
     val imagesRDD = sparkContext.binaryFiles("/home/fang/images/train/1")
     System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
     // val imagesRDD = sparkContext.newAPIHadoopFile[Text, BufferedImage, ImmutableBytesWritable]("/home/fang/images/train/1")
@@ -35,12 +40,12 @@ object HBaseUpLoadImages {
     //createTable(tableName,columnFaminlys,connection)
     imagesRDD.foreachPartition {
       iter => {
-        val hbaseConfig = HBaseConfiguration.create()
-        hbaseConfig.set("hbase.zookeeper.property.clientPort", "2181")
-        hbaseConfig.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
-        val connection: Connection = ConnectionFactory.createConnection(hbaseConfig);
-        val tableName = "imagesTest"
-        val table: Table = connection.getTable(TableName.valueOf(tableName))
+//        val hbaseConfig = HBaseConfiguration.create()
+//        hbaseConfig.set("hbase.zookeeper.property.clientPort", "2181")
+//        hbaseConfig.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
+//        val connection: Connection = ConnectionFactory.createConnection(hbaseConfig);
+//        val tableName = "imagesTest"
+//        val table: Table = connection.getTable(TableName.valueOf(tableName))
         iter.foreach {
           imageFile => {
             //val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(imageFile._2.toArray()))
@@ -50,17 +55,17 @@ object HBaseUpLoadImages {
             val imageName = tempPath(len - 1)
             //TODO 尝试直接获取BufferedImage数据，提升效率
             val imageBinary: scala.Array[Byte] = imageFile._2.toArray()
-            val put: Put = new Put(Bytes.toBytes(imageName))
-            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), imageBinary)
-            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("path"), Bytes.toBytes(imageFile._1))
+//            val put: Put = new Put(Bytes.toBytes(imageName))
+//            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), imageBinary)
+//            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("path"), Bytes.toBytes(imageFile._1))
             val sift = getImageSift(imageBinary)
-            if(!sift.isEmpty) {
-              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"),sift.get)
-            }
-              table.put(put)
+//            if(!sift.isEmpty) {
+//              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"),sift.get)
+//            }
+//              table.put(put)
           }
         }
-        connection.close()
+//        connection.close()
       }
     }
 
@@ -76,21 +81,23 @@ object HBaseUpLoadImages {
     //更改CvType.CV_8UC3为CvType.CV_8U,解决上面错误
     // val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8UC3)
     val data = bi.getRaster.getDataBuffer.asInstanceOf[DataBufferByte].getData
-    // if(bi.getColorModel.getNumComponents==3) {
-    test_mat.put(0, 0, data)
-    val desc = new Mat
-    val fd = FeatureDetector.create(FeatureDetector.SIFT)
-    val mkp = new MatOfKeyPoint
-    fd.detect(test_mat, mkp)
-    val de = DescriptorExtractor.create(DescriptorExtractor.SIFT)
-    //提取sift特征
-    de.compute(test_mat, mkp, desc)
-    //判断是否有特征值
-    if(desc.rows()!=0) {
-      Some(Utils.serializeMat(desc))
-    }else{
-      None
-    }
+//    if (bi.getColorModel.getNumComponents == 3) {
+      test_mat.put(0, 0, data)
+      val desc = new Mat
+      val fd = FeatureDetector.create(FeatureDetector.SIFT)
+      val mkp = new MatOfKeyPoint
+      fd.detect(test_mat, mkp)
+      val de = DescriptorExtractor.create(DescriptorExtractor.SIFT)
+      //提取sift特征
+      de.compute(test_mat, mkp, desc)
+      test_mat.release()
+      mkp.release()
+      //判断是否有特征值
+      if (desc.rows()!= 0) {
+        Some(Utils.serializeMat(desc))
+      } else {
+        None
+      }
   }
 
 }

@@ -46,6 +46,7 @@ object KafkaImageProcess {
     //        }
     //      }
     //    }
+    StorageLevel.MEMORY_AND_DISK_2
     val kafkaStream = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaParams, topics)
     kafkaStream.foreachRDD {
       rdd => {
