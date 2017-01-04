@@ -24,14 +24,13 @@ import org.apache.hadoop.hbase.protobuf.ProtobufUtil
 import org.apache.hadoop.hbase.util.{Base64, Bytes}
 import org.apache.hadoop.hbase.{HBaseConfiguration, HColumnDescriptor, HTableDescriptor, TableName}
 import org.apache.spark._
-
 /**
   * create by fangfeikun on 2016.12.16
   * 测试HBase表中的数据
   */
 object HBaseTest {
   def main(args: Array[String]) {
-    val sparkConf = new SparkConf().setAppName("HBaseTest").setMaster("local[3]")
+    val sparkConf = new SparkConf().setAppName("HBaseTest").setMaster("spark://fang-ubuntu:7077")
     val sc = new SparkContext(sparkConf)
     // please ensure HBASE_CONF_DIR is on classpath of spark driver
     // e.g: set it through spark.driver.extraClassPath property
@@ -61,8 +60,9 @@ object HBaseTest {
     val hBaseRDD = sc.newAPIHadoopRDD(hbaseConf, classOf[TableInputFormat],
       classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
       classOf[org.apache.hadoop.hbase.client.Result])
-
-    println(hBaseRDD.count())
+    val sqlContext = new org.apache.spark.sql.SQLContext(sc)
+    import sqlContext.implicits._
+    hBaseRDD.toDF
 
     sc.stop()
     admin.close()

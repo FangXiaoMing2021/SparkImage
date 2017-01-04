@@ -40,6 +40,7 @@ object KMeansCluster {
     println("Cluster Number:" + clusters.clusterCenters.length)
     println("Cluster Centers Information Overview:")
     clusters.save(sc,"src/main/resources/model.txt")
+    clusters.clusterCenters.length
     clusters.clusterCenters.foreach(
       x => {
         println("Center Point of Cluster " + clusterIndex + ":")

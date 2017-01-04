@@ -17,14 +17,14 @@ import org.apache.spark.{SparkConf, SparkContext}
 object KMeansForSiftInHBase extends App {
 
   val sparkConf = new SparkConf().setMaster("local[4]")
-    .setAppName("My App")
+    .setAppName("KMeansForSiftInHBase")
     .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
   val sc = new SparkContext(sparkConf)
   var hbaseConf = HBaseConfiguration.create()
-  val tableName= "imagesTest"
+  val tableName= "imagesTable"
   hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
   hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
-  hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
+  hbaseConf.set("hbase.zookeeper.quorum", "localhost")
   var scan = new Scan()
   scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"))
   var proto = ProtobufUtil.toScan(scan)
@@ -90,7 +90,7 @@ object KMeansForSiftInHBase extends App {
             histogramArray(predictedClusterIndex) = histogramArray(predictedClusterIndex) + 1
           }
           val put: Put = new Put(result._2.getRow())
-          put.addColumn(Bytes.toBytes("feature"), Bytes.toBytes("sift"), Utils.serializeObject(histogramArray))
+          put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"), Utils.serializeObject(histogramArray))
       }
 
     }

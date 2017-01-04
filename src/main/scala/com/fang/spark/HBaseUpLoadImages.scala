@@ -21,9 +21,11 @@ import org.opencv.features2d.{DescriptorExtractor, FeatureDetector}
 
 object HBaseUpLoadImages {
   def main(args: Array[String]): Unit = {
+    //System.setProperty("java.library.path","/home/fang/BigDataSoft/opencv-2.4.13/release/lib")
     val sparkConf = new SparkConf()
       .setAppName("HBaseUpLoadImages").
-      setMaster("local[4]").
+      //setMaster("local[4]").
+      //setMaster("spark://fang-ubuntu:7077").
       set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     val sparkContext = new SparkContext(sparkConf)
     //TODO 单机测试情况下，图片文件太多，程序运行失败，打出hs_err_pid***_log日志，具体情况不明
@@ -33,19 +35,21 @@ object HBaseUpLoadImages {
     //train/3 出错,打印日志 Failed to write core dump. Core dumps have been disabled. To enable core dumping, try "ulimit -c unlimited" before starting Java again
     //内存不够时出现溢出
     //先运行ulimit -c unlimited
-    val imagesRDD = sparkContext.binaryFiles("/home/fang/images/train/1")
-    System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
+    val imagesRDD = sparkContext.binaryFiles("file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n02113799")
+
     // val imagesRDD = sparkContext.newAPIHadoopFile[Text, BufferedImage, ImmutableBytesWritable]("/home/fang/images/train/1")
     // val columnFaminlys :Array[String] = Array("image")
     //createTable(tableName,columnFaminlys,connection)
     imagesRDD.foreachPartition {
       iter => {
-//        val hbaseConfig = HBaseConfiguration.create()
-//        hbaseConfig.set("hbase.zookeeper.property.clientPort", "2181")
-//        hbaseConfig.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
-//        val connection: Connection = ConnectionFactory.createConnection(hbaseConfig);
-//        val tableName = "imagesTest"
-//        val table: Table = connection.getTable(TableName.valueOf(tableName))
+        //
+        System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
+        val hbaseConfig = HBaseConfiguration.create()
+        hbaseConfig.set("hbase.zookeeper.property.clientPort", "2181")
+        hbaseConfig.set("hbase.zookeeper.quorum", "fang-ubuntu")
+        val connection: Connection = ConnectionFactory.createConnection(hbaseConfig);
+        val tableName = "imagesTest"
+        val table: Table = connection.getTable(TableName.valueOf(tableName))
         iter.foreach {
           imageFile => {
             //val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(imageFile._2.toArray()))
@@ -55,17 +59,17 @@ object HBaseUpLoadImages {
             val imageName = tempPath(len - 1)
             //TODO 尝试直接获取BufferedImage数据，提升效率
             val imageBinary: scala.Array[Byte] = imageFile._2.toArray()
-//            val put: Put = new Put(Bytes.toBytes(imageName))
-//            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), imageBinary)
-//            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("path"), Bytes.toBytes(imageFile._1))
+            val put: Put = new Put(Bytes.toBytes(imageName))
+            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), imageBinary)
+            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("path"), Bytes.toBytes(imageFile._1))
             val sift = getImageSift(imageBinary)
-//            if(!sift.isEmpty) {
-//              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"),sift.get)
-//            }
-//              table.put(put)
+            if(!sift.isEmpty) {
+              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"),sift.get)
+            }
+              table.put(put)
           }
         }
-//        connection.close()
+        connection.close()
       }
     }
 
