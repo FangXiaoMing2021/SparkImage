@@ -7,16 +7,20 @@ package com.fang.spark
 
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import org.apache.hadoop.hbase.client._
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable
+import org.apache.hadoop.hbase.mapred.TableOutputFormat
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil
 import org.apache.hadoop.hbase.util.{Base64, Bytes}
+import org.apache.hadoop.mapred.JobConf
 import org.apache.spark.mllib.clustering.{KMeans, KMeansModel}
 import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{SparkConf, SparkContext}
 
 object KMeansForSiftInHBase extends App {
 
-  val sparkConf = new SparkConf().setMaster("spark://fang-ubuntu:7077")
+  val sparkConf = new SparkConf()//.setMaster("local[4]")
     .setAppName("KMeansForSiftInHBase")
     .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
   val sc = new SparkContext(sparkConf)
@@ -33,16 +37,12 @@ object KMeansForSiftInHBase extends App {
   val hbaseRDD = sc.newAPIHadoopRDD(hbaseConf, classOf[TableInputFormat],
     classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
     classOf[org.apache.hadoop.hbase.client.Result])
-  //缓存hbaseRDD
-  hbaseRDD.persist()
-  val siftRDD = hbaseRDD.map(x => x._2)
+ /* val siftRDD = hbaseRDD.map(x => x._2)
     .flatMap {
       result =>
         val siftByte = result.getValue(Bytes.toBytes("image"), Bytes.toBytes("sift"))
         val siftArray: Array[Float] = Utils.deserializeMat(siftByte)
-        //println(siftArray.length)
         val size = siftArray.length / 128
-        //println(size)
         val siftTwoDim = new Array[Array[Float]](size)
         for (i <- 0 to size - 1) {
           val xs: Array[Float] = new Array[Float](128)
@@ -54,50 +54,90 @@ object KMeansForSiftInHBase extends App {
           }
           siftTwoDim(i) = xs
         }
-        siftTwoDim
-    }.map(data => Vectors.dense(data.map(i => i.toDouble)))
+        (result.getRow,siftTwoDim)
+    }*/
+ val siftRDD = hbaseRDD.map{
+     result =>
+       val siftByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("sift"))
+       val siftArray: Array[Float] = Utils.deserializeMat(siftByte)
+       val size = siftArray.length / 128
+       val siftTwoDim = new Array[Array[Float]](size)
+       for (i <- 0 to size - 1) {
+         val xs: Array[Float] = new Array[Float](128)
+         for (j <- 0 to 127) {
+           xs(j) = siftByte(i * 128 + j)
+         }
+         siftTwoDim(i) = xs
+       }
+       (result._2.getRow,siftTwoDim)
+   }
+  siftRDD.persist(StorageLevel.MEMORY_AND_DISK_SER_2)
+  val siftDenseRDD = siftRDD.flatMap(_._2).map(data => Vectors.dense(data.map(i => i.toDouble)))
   val numClusters = 4
   val numIterations = 30
   val runTimes = 3
   var clusterIndex: Int = 0
-  val clusters: KMeansModel = KMeans.train(siftRDD, numClusters, numIterations, runTimes)
-  println("Cluster Number:" + clusters.clusterCenters.length)
-  println("Cluster Centers Information Overview:")
+  val clusters: KMeansModel = KMeans.train(siftDenseRDD, numClusters, numIterations, runTimes)
+  clusters.save(sc,"/spark/kmeansModel")
+  //  println("Cluster Number:" + clusters.clusterCenters.length)
+  //  println("Cluster Centers Information Overview:")
   //clusters.save(sc, "src/main/resources/KMeansModel")
-  clusters.clusterCenters.foreach(
-    x => {
-      println("Center Point of Cluster " + clusterIndex + ":")
-      println(x)
-      clusterIndex += 1
-    })
-
+  //  clusters.clusterCenters.foreach(
+  //    x => {
+  //      println("Center Point of Cluster " + clusterIndex + ":")
+  //      println(x)
+  //      clusterIndex += 1
+  //    })
+  println(siftRDD.count())
   hbaseConf.unset(TableInputFormat.SCAN)
-  val histogramRDD = hbaseRDD.foreachPartition {
+  hbaseConf.unset(TableInputFormat.INPUT_TABLE)
+  val jobConf = new JobConf(hbaseConf)
+  jobConf.setOutputFormat(classOf[TableOutputFormat])
+  jobConf.set(TableOutputFormat.OUTPUT_TABLE, tableName)
+  val myKmeansModel = KMeansModel.load(sc,"/spark/kmeansModel")
+  val histogramRDD = siftRDD.map {
+    result => {
+      /*一个Put对象就是一行记录，在构造方法中指定主键
+       * 所有插入的数据必须用org.apache.hadoop.hbase.util.Bytes.toBytes方法转换
+       * Put.add方法接收三个参数：列族，列名，数据
+       */
+      val histogramArray = new Array[Int](myKmeansModel.clusterCenters.length)
+      //val siftArray: Array[Float] =result._2.map(i=>i.toDouble)
+      for (i <- 0 to result._2.length - 1) {
+        val predictedClusterIndex: Int = myKmeansModel.predict(Vectors.dense(result._2(i).map(i=>i.toDouble)))
+        histogramArray(predictedClusterIndex) = histogramArray(predictedClusterIndex) + 1
+      }
+      val put: Put = new Put(result._1)
+      put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"), Utils.serializeObject(histogramArray))
+      (new ImmutableBytesWritable, put)
+    }
+  }
+  histogramRDD.saveAsHadoopDataset(jobConf)
+  /*val histogramRDD = hbaseRDD.foreachPartition {
     iter => {
+      // val hbaseConfig = HBaseConfiguration.create()
       val connection: Connection = ConnectionFactory.createConnection(hbaseConf)
+      val tableName = "imagesTest"
       val table: Table = connection.getTable(TableName.valueOf(tableName))
       iter.foreach {
         result =>
-          // val rowKey = Bytes.toString(result._2.getRow())
           val histogramArray = new Array[Int](numClusters)
           val siftByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("sift"))
-          val siftArray: Array[Float] = Utils.deserializeMat(siftByte)
-          val size = siftArray.length / 128
-          for (i <- 0 to size - 1) {
-            val xs: Array[Float] = new Array[Float](128)
-            for (j <- 0 to 127) {
-              xs(j) = siftByte(i * 128 + j)
+            val siftArray: Array[Float] = Utils.deserializeMat(siftByte)
+            val size = siftArray.length / 128
+            for (i <- 0 to size - 1) {
+              val xs: Array[Float] = new Array[Float](128)
+              for (j <- 0 to 127) {
+                xs(j) = siftByte(i * 128 + j)
+              }
+              val predictedClusterIndex: Int = clusters.predict(Vectors.dense(xs.map(x => x.toDouble)))
+              histogramArray(predictedClusterIndex) = histogramArray(predictedClusterIndex) + 1
             }
-            val predictedClusterIndex: Int = clusters.predict(Vectors.dense(xs.map(x => x.toDouble)))
-            histogramArray(predictedClusterIndex) = histogramArray(predictedClusterIndex) + 1
+            val put: Put = new Put(result._2.getRow())
+            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"), Utils.serializeObject(histogramArray))
+            table.put(put)
           }
-          val put: Put = new Put(result._2.getRow())
-          put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"), Utils.serializeObject(histogramArray))
-          table.put(put)
-      }
-
     }
-  }
-
-
+  }*/
+  sc.stop()
 }
