@@ -42,7 +42,7 @@ object HBaseUpLoadImages {
     //createTable(tableName,columnFaminlys,connection)
     imagesRDD.foreachPartition {
       iter => {
-        //
+        //java.lang.UnsatisfiedLinkError: org.opencv.core.Mat.n_Mat(III)J
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
         val hbaseConfig = HBaseConfiguration.create()
         hbaseConfig.set("hbase.zookeeper.property.clientPort", "2181")

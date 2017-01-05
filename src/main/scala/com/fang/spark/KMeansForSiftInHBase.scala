@@ -16,15 +16,15 @@ import org.apache.spark.{SparkConf, SparkContext}
 
 object KMeansForSiftInHBase extends App {
 
-  val sparkConf = new SparkConf().setMaster("local[4]")
+  val sparkConf = new SparkConf().setMaster("spark://fang-ubuntu:7077")
     .setAppName("KMeansForSiftInHBase")
     .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
   val sc = new SparkContext(sparkConf)
   var hbaseConf = HBaseConfiguration.create()
-  val tableName= "imagesTable"
+  val tableName = "imagesTest"
   hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
   hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
-  hbaseConf.set("hbase.zookeeper.quorum", "localhost")
+  hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu")
   var scan = new Scan()
   scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"))
   var proto = ProtobufUtil.toScan(scan)
@@ -63,20 +63,22 @@ object KMeansForSiftInHBase extends App {
   val clusters: KMeansModel = KMeans.train(siftRDD, numClusters, numIterations, runTimes)
   println("Cluster Number:" + clusters.clusterCenters.length)
   println("Cluster Centers Information Overview:")
-  clusters.save(sc, "src/main/resources/KMeansModel")
+  //clusters.save(sc, "src/main/resources/KMeansModel")
   clusters.clusterCenters.foreach(
     x => {
       println("Center Point of Cluster " + clusterIndex + ":")
       println(x)
       clusterIndex += 1
     })
+
+  hbaseConf.unset(TableInputFormat.SCAN)
   val histogramRDD = hbaseRDD.foreachPartition {
     iter => {
       val connection: Connection = ConnectionFactory.createConnection(hbaseConf)
       val table: Table = connection.getTable(TableName.valueOf(tableName))
       iter.foreach {
         result =>
-         // val rowKey = Bytes.toString(result._2.getRow())
+          // val rowKey = Bytes.toString(result._2.getRow())
           val histogramArray = new Array[Int](numClusters)
           val siftByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("sift"))
           val siftArray: Array[Float] = Utils.deserializeMat(siftByte)
@@ -91,10 +93,11 @@ object KMeansForSiftInHBase extends App {
           }
           val put: Put = new Put(result._2.getRow())
           put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"), Utils.serializeObject(histogramArray))
+          table.put(put)
       }
 
     }
   }
 
 
-  }
+}
