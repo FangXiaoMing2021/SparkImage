@@ -32,6 +32,7 @@ object SparkScanHBase {
         val connection: Connection = ConnectionFactory.createConnection(hbaseConfig)
         iter.foreach {
           tuple => {
+            val key = tuple._1
             val value = tuple._2
             val image = value.getValue(Bytes.toBytes("image"), Bytes.toBytes("binary"))
             val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(image))

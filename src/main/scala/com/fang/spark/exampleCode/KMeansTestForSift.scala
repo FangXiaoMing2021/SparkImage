@@ -32,10 +32,14 @@ object KMeansTestForSift extends App {
   val hbaseRDD = sc.newAPIHadoopRDD(hbaseConf, classOf[TableInputFormat],
     classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
     classOf[org.apache.hadoop.hbase.client.Result])
+  val tuple = hbaseRDD.first()
+
+
   val siftRDD = hbaseRDD.map(x => x._2)
     .flatMap {
       result =>
         val siftByte = result.getValue(Bytes.toBytes("image"), Bytes.toBytes("sift"))
+        val value = Bytes.toString(siftByte)
         val siftArray: Array[Float] = Utils.deserializeMat(siftByte)
         val size = siftArray.length / 128
         val siftTwoDim = new Array[Array[Float]](size)

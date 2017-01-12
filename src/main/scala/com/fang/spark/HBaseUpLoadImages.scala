@@ -36,7 +36,6 @@ object HBaseUpLoadImages {
     //内存不够时出现溢出
     //先运行ulimit -c unlimited
     val imagesRDD = sparkContext.binaryFiles("file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n02113799")
-
     // val imagesRDD = sparkContext.newAPIHadoopFile[Text, BufferedImage, ImmutableBytesWritable]("/home/fang/images/train/1")
     // val columnFaminlys :Array[String] = Array("image")
     //createTable(tableName,columnFaminlys,connection)
@@ -72,7 +71,6 @@ object HBaseUpLoadImages {
         connection.close()
       }
     }
-
     sparkContext.stop()
   }
 

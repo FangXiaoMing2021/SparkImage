@@ -24,15 +24,15 @@ object KMeansForSiftInHBase extends App {
     .setAppName("KMeansForSiftInHBase")
     .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
   val sc = new SparkContext(sparkConf)
-  var hbaseConf = HBaseConfiguration.create()
+  val hbaseConf = HBaseConfiguration.create()
   val tableName = "imagesTest"
   hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
   hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
   hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu")
-  var scan = new Scan()
+  val scan = new Scan()
   scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"))
-  var proto = ProtobufUtil.toScan(scan)
-  var ScanToString = Base64.encodeBytes(proto.toByteArray())
+  val proto = ProtobufUtil.toScan(scan)
+  val ScanToString = Base64.encodeBytes(proto.toByteArray())
   hbaseConf.set(TableInputFormat.SCAN, ScanToString)
   val hbaseRDD = sc.newAPIHadoopRDD(hbaseConf, classOf[TableInputFormat],
     classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
@@ -88,19 +88,19 @@ object KMeansForSiftInHBase extends App {
   //      println(x)
   //      clusterIndex += 1
   //    })
-  println(siftRDD.count())
-  hbaseConf.unset(TableInputFormat.SCAN)
+ // println(siftRDD.count())
+//  hbaseConf.unset(TableInputFormat.SCAN)
   hbaseConf.unset(TableInputFormat.INPUT_TABLE)
   val jobConf = new JobConf(hbaseConf)
   jobConf.setOutputFormat(classOf[TableOutputFormat])
   jobConf.set(TableOutputFormat.OUTPUT_TABLE, tableName)
-  val myKmeansModel = KMeansModel.load(sc,"/spark/kmeansModel")
   val histogramRDD = siftRDD.map {
     result => {
       /*一个Put对象就是一行记录，在构造方法中指定主键
        * 所有插入的数据必须用org.apache.hadoop.hbase.util.Bytes.toBytes方法转换
        * Put.add方法接收三个参数：列族，列名，数据
        */
+      val myKmeansModel = KMeansModel.load(sc,"/spark/kmeansModel")
       val histogramArray = new Array[Int](myKmeansModel.clusterCenters.length)
       //val siftArray: Array[Float] =result._2.map(i=>i.toDouble)
       for (i <- 0 to result._2.length - 1) {
