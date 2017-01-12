@@ -1,11 +1,11 @@
-package com.fang.spark
+package com.fang.spark.bakeup
 
-import java.awt.image.{BufferedImage, DataBufferByte}
 import java.io._
 import java.util.HashMap
-import javax.imageio.ImageIO
 
+import com.fang.spark.ImageBinaryTransform
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
+
 /**
   * Created by fang on 16-12-21.
   */

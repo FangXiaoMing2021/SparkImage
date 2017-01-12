@@ -1,21 +1,15 @@
-package com.fang.spark
+package com.fang.spark.bakeup
 
-import java.awt.image.BufferedImage
-import java.io.{ByteArrayInputStream, File}
-import javax.imageio.ImageIO
-
-import kafka.serializer.{Decoder, DefaultDecoder, StringDecoder}
-import org.apache.kafka.common.serialization.{ByteArrayDeserializer, StringDeserializer}
+import com.fang.spark.ImageBinaryTransform
+import kafka.serializer.StringDecoder
 import org.apache.spark.SparkConf
-import org.apache.spark.storage.StorageLevel
-import org.apache.spark.streaming.dstream.ReceiverInputDStream
-import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.apache.spark.streaming.kafka.KafkaUtils
+import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 /**
   * Created by fang on 16-12-21.
   */
-object KafkaImageProcess {
+object KafkaImageConsumer {
   def main(args: Array[String]): Unit = {
     val sparkConf = new SparkConf().setAppName("KafkaImageProcess").setMaster("local[4]")
     val ssc = new StreamingContext(sparkConf, Seconds(2))
@@ -54,7 +48,7 @@ object KafkaImageProcess {
               imageArray => {
                 println(imageArray._1)
                 //println(imageArray._2)
-                TestImageBinary.base64StringToImage(imageArray._2,imageArray._1)
+                ImageBinaryTransform.base64StringToImage(imageArray._2,imageArray._1)
 //                val byte = imageArray._2.to
 //                val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(byte))
 ////                println(bi.getHeight)
