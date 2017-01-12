@@ -6,7 +6,10 @@ import javax.imageio.ImageIO
 
 import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.client._
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable
+import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.util.Bytes
+import org.apache.hadoop.io.{LongWritable, Text}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.opencv.core.{Core, CvType, Mat, MatOfKeyPoint}
 import org.opencv.features2d.{DescriptorExtractor, FeatureDetector}
@@ -36,7 +39,7 @@ object HBaseUpLoadImages {
     //内存不够时出现溢出
     //先运行ulimit -c unlimited
     val imagesRDD = sparkContext.binaryFiles("file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n02113799")
-    // val imagesRDD = sparkContext.newAPIHadoopFile[Text, BufferedImage, ImmutableBytesWritable]("/home/fang/images/train/1")
+   // val imagesRDD = sparkContext.newAPIHadoopFile[Text, BufferedImage, ImmutableBytesWritable]("/home/fang/images/train/1")
     // val columnFaminlys :Array[String] = Array("image")
     //createTable(tableName,columnFaminlys,connection)
     imagesRDD.foreachPartition {
