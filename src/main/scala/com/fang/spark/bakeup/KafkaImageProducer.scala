@@ -3,7 +3,7 @@ package com.fang.spark.bakeup
 import java.io._
 import java.util.HashMap
 
-import com.fang.spark.ImageBinaryTransform
+import com.fang.spark.{ImageBinaryTransform, SparkUtils}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 
 /**
@@ -28,7 +28,7 @@ object KafkaImageProducer {
     for(file<-fileList){
 //      val bi:BufferedImage= ImageIO.read(file)
 //      val image = bi.getRaster.getDataBuffer.asInstanceOf[DataBufferByte].getData
-      val image = ImageBinaryTransform.getImageBinary(file)
+      val image = SparkUtils.getImageToString(file)
       val message = new ProducerRecord[String, String](topic, file.getName, image)
       println(file.getName)
       println(image.length)

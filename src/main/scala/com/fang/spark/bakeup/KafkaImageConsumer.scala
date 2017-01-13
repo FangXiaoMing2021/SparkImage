@@ -1,6 +1,6 @@
 package com.fang.spark.bakeup
 
-import com.fang.spark.ImageBinaryTransform
+import com.fang.spark.{ImageBinaryTransform, SparkUtils}
 import kafka.serializer.StringDecoder
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.kafka.KafkaUtils
@@ -48,7 +48,7 @@ object KafkaImageConsumer {
               imageArray => {
                 println(imageArray._1)
                 //println(imageArray._2)
-                ImageBinaryTransform.base64StringToImage(imageArray._2,imageArray._1)
+                SparkUtils.base64StringToImage(imageArray._2,imageArray._1)
 //                val byte = imageArray._2.to
 //                val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(byte))
 ////                println(bi.getHeight)

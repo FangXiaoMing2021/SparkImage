@@ -3,8 +3,9 @@ package com.fang.spark
 import java.awt.image.{BufferedImage, DataBufferByte}
 import java.io.ByteArrayInputStream
 import javax.imageio.ImageIO
-
 import kafka.serializer.StringDecoder
+import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
+import org.apache.hadoop.hbase.client.ConnectionFactory
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.mllib.clustering.KMeansModel
 import org.apache.spark.mllib.linalg.Vectors
@@ -30,23 +31,35 @@ object KafkaImageConsumer {
     val kafkaStream = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaParams, topics)
     kafkaStream.foreachRDD {
       rdd => {
-        rdd.foreach{
+        rdd.foreachPartition {
+          partition => {
+            val conf = HBaseConfiguration.create()
+            val conn = ConnectionFactory.createConnection(conf)
+            val userTable = TableName.valueOf("tablename")
+            val table = conn.getTable(userTable)
+            partition.foreach {
               imageArray => {
                 val imageBytes = ImageBinaryTransform.decoder.decodeBuffer(imageArray._2)
-               // val bais = new ByteArrayInputStream(imageBytes)
+                // val bais = new ByteArrayInputStream(imageBytes)
                 //val bi:BufferedImage = ImageIO.read(bais)
+                val beg = System.currentTimeMillis()
                 val sift = getImageSift(imageBytes)
-                val myKmeansModel = KMeansModel.load(new SparkContext(sparkConf),"/spark/kmeansModel")
+                println("***************************************************************")
+                println(" 耗时: " + (System.currentTimeMillis() - beg)+"ms")
+                println("***************************************************************")
+                val myKmeansModel = KMeansModel.load(new SparkContext(sparkConf), "/spark/kmeansModel")
                 val histogramArray = new Array[Int](myKmeansModel.clusterCenters.length)
                 for (i <- 0 to sift.rows()) {
                   val data = new Array[Double](sift.cols())
-                  sift.row(i).get(0,0,data)
+                  sift.row(i).get(0, 0, data)
                   val predictedClusterIndex: Int = myKmeansModel.predict(Vectors.dense(data))
                   histogramArray(predictedClusterIndex) = histogramArray(predictedClusterIndex) + 1
                 }
-
               }
             }
+
+          }
+        }
 
       }
     }
@@ -56,7 +69,7 @@ object KafkaImageConsumer {
   }
 
   //获取图像的sift特征
-  def getImageSift(image: Array[Byte]):Mat = {
+  def getImageSift(image: Array[Byte]): Mat = {
     val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(image))
     val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8U)
     val data = bi.getRaster.getDataBuffer.asInstanceOf[DataBufferByte].getData
