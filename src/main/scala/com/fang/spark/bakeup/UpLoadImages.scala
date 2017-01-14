@@ -1,18 +1,12 @@
-package com.fang.spark
+package com.fang.spark.bakeup
 
-import java.awt.image.{BufferedImage, DataBufferByte}
-import java.io.ByteArrayInputStream
-import javax.imageio.ImageIO
-
+import com.fang.spark.{ImageInputFormat, SparkUtils, Utils}
 import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.client._
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable
-import org.apache.hadoop.hbase.mapred.TableOutputFormat
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.io.Text
-import org.apache.hadoop.mapred.JobConf
 import org.apache.spark.{SparkConf, SparkContext}
-import org.opencv.core.{Core, CvType, Mat, MatOfKeyPoint}
+import org.opencv.core.{Core, Mat, MatOfKeyPoint}
 import org.opencv.features2d.{DescriptorExtractor, FeatureDetector}
 
 /**

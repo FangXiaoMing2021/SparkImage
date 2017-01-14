@@ -10,6 +10,8 @@ import sun.misc.{BASE64Decoder, BASE64Encoder}
   * Created by fang on 16-12-16.
   */
 object SparkUtils {
+  val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n02113799"
+  val kmeansModelPath = "/spark/kmeansModel"
   private[spark] val encoder = new BASE64Encoder
   private[spark] val decoder = new BASE64Decoder
   //使用int，double都出错，改为float
