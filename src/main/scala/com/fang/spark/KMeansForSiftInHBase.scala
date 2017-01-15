@@ -21,7 +21,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 object KMeansForSiftInHBase extends App {
   val beginKMeans = System.currentTimeMillis()
   val sparkConf = new SparkConf()
-    .setMaster("spark://fang-ubuntu:7077")
+    //.setMaster("spark://fang-ubuntu:7077")
     //.setMaster("local[4]")
     .setAppName("KMeansForSiftInHBase")
     .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
@@ -59,7 +59,7 @@ object KMeansForSiftInHBase extends App {
        (result._2.getRow,siftTwoDim)
    }
   //siftRDD.persist(StorageLevel.MEMORY_AND_DISK_SER_2)
-  val siftDenseRDD = siftRDD.flatMap(_._2).map(data => Vectors.dense(data.map(i => i.toDouble)))
+  val siftDenseRDD = siftRDD.flatMap(_._2).map(data => Vectors.dense(data.map(i => i.toDouble))).cache()
   SparkUtils.printComputeTime(transformSift,"tranform sift")
   val kmeansTime = System.currentTimeMillis()
   val numClusters = 4

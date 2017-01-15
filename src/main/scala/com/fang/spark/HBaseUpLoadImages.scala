@@ -25,14 +25,13 @@ object HBaseUpLoadImages {
     val beginUpload = System.currentTimeMillis()
     val sparkConf = new SparkConf()
       .setAppName("HBaseUpLoadImages").
-      //setMaster("local[4]").
-      setMaster("spark://fang-ubuntu:7077").
+      setMaster("local[4]").
+      //setMaster("spark://fang-ubuntu:7077").
       set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     val sparkContext = new SparkContext(sparkConf)
     sparkContext.setLogLevel("WARN")
     //统计获取本地数据文件的时间
     val begUpload = System.currentTimeMillis()
-    //val imagesRDD = sparkContext.binaryFiles("file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n02113799")
     val imagesRDD = sparkContext.binaryFiles(SparkUtils.imagePath)
     SparkUtils.printComputeTime(begUpload, "upload image")
     imagesRDD.foreachPartition {
