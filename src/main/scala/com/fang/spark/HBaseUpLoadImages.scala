@@ -2,7 +2,9 @@ package com.fang.spark
 
 import java.awt.image.{BufferedImage, DataBufferByte}
 import java.io.ByteArrayInputStream
+import java.net.InetAddress
 import javax.imageio.ImageIO
+
 import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.util.Bytes
@@ -24,17 +26,19 @@ object HBaseUpLoadImages {
   def main(args: Array[String]): Unit = {
     val beginUpload = System.currentTimeMillis()
     val sparkConf = new SparkConf()
-      .setAppName("HBaseUpLoadImages").
-      setMaster("local[4]").
-      //setMaster("spark://fang-ubuntu:7077").
-      set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      .setAppName("HBaseUpLoadImages")
+      //.setMaster("local[4]")
+       //.setMaster("spark://fang-ubuntu:7077")
+        .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     val sparkContext = new SparkContext(sparkConf)
     sparkContext.setLogLevel("WARN")
     //统计获取本地数据文件的时间
     val begUpload = System.currentTimeMillis()
     val imagesRDD = sparkContext.binaryFiles(SparkUtils.imagePath)
     SparkUtils.printComputeTime(begUpload, "upload image")
+    println("num of partition "+imagesRDD.getNumPartitions)
     imagesRDD.foreachPartition {
+
       iter => {
         //加载Opencv库,在每个分区都需加载
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
@@ -49,6 +53,7 @@ object HBaseUpLoadImages {
         SparkUtils.printComputeTime(begConnHBase, "connect hbase")
         //统计计算sift时间
         val begComputeSift = System.currentTimeMillis()
+        val host = InetAddress.getLocalHost()
         iter.foreach {
           imageFile => {
             val tempPath = imageFile._1.split("/")
@@ -59,10 +64,11 @@ object HBaseUpLoadImages {
             val put: Put = new Put(Bytes.toBytes(imageName))
             put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), imageBinary)
             put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("path"), Bytes.toBytes(imageFile._1))
-            val sift = getImageSift(imageBinary)
-            if (!sift.isEmpty) {
-              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
-            }
+            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("hostname"), Bytes.toBytes(host.getHostAddress+host.getHostName))
+//            val sift = getImageSift(imageBinary)
+//            if (!sift.isEmpty) {
+//              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
+//            }
             table.put(put)
           }
         }

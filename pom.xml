@@ -108,6 +108,11 @@
             <artifactId>hadoop-common</artifactId>
             <version>2.7.2</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-hive_2.10</artifactId>
+            <version>1.6.1</version>
+        </dependency>
         <!--<dependency>-->
             <!--<groupId>org.apache.kafka</groupId>-->
             <!--<artifactId>kafka-clients</artifactId>-->

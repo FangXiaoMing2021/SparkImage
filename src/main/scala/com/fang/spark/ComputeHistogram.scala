@@ -19,7 +19,7 @@ object ComputeHistogram {
   def main(args: Array[String]): Unit = {
     val beginComputeHistogram = System.currentTimeMillis()
     val sparkConf = new SparkConf()
-      .setMaster("local[4]")
+      //.setMaster("local[4]")
       //.setMaster("spark://fang-ubuntu:7077")
       .setAppName("ComputeHistogram")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")

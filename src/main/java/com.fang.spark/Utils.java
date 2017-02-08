@@ -23,7 +23,24 @@ public class Utils {
             return null;
         }
     }
-//使用int，double都出错，改为float
+    public static int[] ByteToObject(byte[] bytes) {
+        int[] obj = null;
+        try {
+            // bytearray to object
+            ByteArrayInputStream bi = new ByteArrayInputStream(bytes);
+            ObjectInputStream oi = new ObjectInputStream(bi);
+
+            obj = (int[])oi.readObject();
+            bi.close();
+            oi.close();
+        } catch (Exception e) {
+            System.out.println("translation" + e.getMessage());
+            e.printStackTrace();
+        }
+        return obj;
+    }
+
+    //使用int，double都出错，改为float
     public static float[] deserializeMat(byte[] b) {
         try {
             ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(b));
