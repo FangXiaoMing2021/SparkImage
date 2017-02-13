@@ -11,8 +11,9 @@ import sun.misc.{BASE64Decoder, BASE64Encoder}
   * Created by fang on 16-12-16.
   */
 object SparkUtils {
-  val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n02113799"
+  // val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n02113799"
   //val imagePath = "hdfs://218.199.92.225:9000/spark/n01491361"
+  val imagePath = "/home/fang/images/train/3"
   val kmeansModelPath = "/spark/kmeansModel"
   private[spark] val encoder = new BASE64Encoder
   private[spark] val decoder = new BASE64Decoder
@@ -101,7 +102,7 @@ object SparkUtils {
   }
 
   //获取图像的sift特征
-  def getImageSift(image: Array[Byte]): Mat = {
+  def getImageSiftOfMat(image: Array[Byte]): Mat = {
     val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(image))
     val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8U)
     val data = bi.getRaster.getDataBuffer.asInstanceOf[DataBufferByte].getData
@@ -115,7 +116,28 @@ object SparkUtils {
     de.compute(test_mat, mkp, desc)
     desc
   }
-
+  //获取图像的sift特征
+  def getImageSift(image: Array[Byte]): Option[Array[Byte]] = {
+    val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(image))
+    val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8U)
+    val data = bi.getRaster.getDataBuffer.asInstanceOf[DataBufferByte].getData
+    test_mat.put(0, 0, data)
+    val desc = new Mat
+    val fd = FeatureDetector.create(FeatureDetector.SIFT)
+    val mkp = new MatOfKeyPoint
+    fd.detect(test_mat, mkp)
+    val de = DescriptorExtractor.create(DescriptorExtractor.SIFT)
+    //提取sift特征
+    de.compute(test_mat, mkp, desc)
+    test_mat.release()
+    mkp.release()
+    //判断是否有特征值
+    if (desc.rows() != 0) {
+      Some(Utils.serializeMat(desc))
+    } else {
+      None
+    }
+  }
   def deserializeArray(b: Array[Byte]): Array[Int] = {
     var data = null.asInstanceOf[Array[Int]]
     try {

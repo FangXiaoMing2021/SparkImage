@@ -14,6 +14,7 @@ import org.apache.spark.streaming.kafka.KafkaUtils
 
 /**
   * Created by fang on 16-12-21.
+  * 从Kafka获取图像数据,计算该图像的sift直方图,和HBase中的图像直方图对比,输出最相近的图像名
   */
 object KafkaImageConsumer {
   def main(args: Array[String]): Unit = {
@@ -57,7 +58,7 @@ object KafkaImageConsumer {
             partition.foreach {
               imageArray => {
                 val imageBytes = ImageBinaryTransform.decoder.decodeBuffer(imageArray._2)
-                val sift = SparkUtils.getImageSift(imageBytes)
+                val sift = SparkUtils.getImageSiftOfMat(imageBytes)
                 val myKmeansModel = KMeansModel.load(new SparkContext(sparkConf), "/spark/kmeansModel")
                 val histogramArray = new Array[Int](myKmeansModel.clusterCenters.length)
                 //计算获取的图像的sift直方图

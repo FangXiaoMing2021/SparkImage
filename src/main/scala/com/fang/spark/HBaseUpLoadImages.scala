@@ -1,16 +1,11 @@
 package com.fang.spark
 
-import java.awt.image.{BufferedImage, DataBufferByte}
-import java.io.ByteArrayInputStream
 import java.net.InetAddress
-import javax.imageio.ImageIO
-
 import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.{SparkConf, SparkContext}
-import org.opencv.core.{Core, CvType, Mat, MatOfKeyPoint}
-import org.opencv.features2d.{DescriptorExtractor, FeatureDetector}
+import org.opencv.core.Core
 
 /**
   * Created by hadoop on 16-11-15.
@@ -27,16 +22,16 @@ object HBaseUpLoadImages {
     val beginUpload = System.currentTimeMillis()
     val sparkConf = new SparkConf()
       .setAppName("HBaseUpLoadImages")
-      //.setMaster("local[4]")
-       //.setMaster("spark://fang-ubuntu:7077")
-        .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      .setMaster("local[2]")
+      //.setMaster("spark://fang-ubuntu:7077")
+      .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     val sparkContext = new SparkContext(sparkConf)
     sparkContext.setLogLevel("WARN")
     //统计获取本地数据文件的时间
     val begUpload = System.currentTimeMillis()
     val imagesRDD = sparkContext.binaryFiles(SparkUtils.imagePath)
     SparkUtils.printComputeTime(begUpload, "upload image")
-    println("num of partition "+imagesRDD.getNumPartitions)
+    println("num of partition " + imagesRDD.getNumPartitions)
     imagesRDD.foreachPartition {
 
       iter => {
@@ -64,11 +59,11 @@ object HBaseUpLoadImages {
             val put: Put = new Put(Bytes.toBytes(imageName))
             put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), imageBinary)
             put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("path"), Bytes.toBytes(imageFile._1))
-            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("hostname"), Bytes.toBytes(host.getHostAddress+host.getHostName))
-//            val sift = getImageSift(imageBinary)
-//            if (!sift.isEmpty) {
-//              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
-//            }
+            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("hostname"), Bytes.toBytes(host.getHostAddress + host.getHostName))
+            val sift = SparkUtils.getImageSift(imageBinary)
+            if (!sift.isEmpty) {
+              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
+            }
             table.put(put)
           }
         }
@@ -77,30 +72,7 @@ object HBaseUpLoadImages {
       }
     }
     sparkContext.stop()
-    SparkUtils.printComputeTime(beginUpload,"程序运行总时间")
-  }
-
-  //获取图像的sift特征
-  def getImageSift(image: Array[Byte]): Option[Array[Byte]] = {
-    val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(image))
-    val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8U)
-    val data = bi.getRaster.getDataBuffer.asInstanceOf[DataBufferByte].getData
-    test_mat.put(0, 0, data)
-    val desc = new Mat
-    val fd = FeatureDetector.create(FeatureDetector.SIFT)
-    val mkp = new MatOfKeyPoint
-    fd.detect(test_mat, mkp)
-    val de = DescriptorExtractor.create(DescriptorExtractor.SIFT)
-    //提取sift特征
-    de.compute(test_mat, mkp, desc)
-    test_mat.release()
-    mkp.release()
-    //判断是否有特征值
-    if (desc.rows() != 0) {
-      Some(Utils.serializeMat(desc))
-    } else {
-      None
-    }
+    SparkUtils.printComputeTime(beginUpload, "程序运行总时间")
   }
 
 }
