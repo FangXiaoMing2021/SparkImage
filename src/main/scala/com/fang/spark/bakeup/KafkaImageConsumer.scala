@@ -1,7 +1,11 @@
 package com.fang.spark.bakeup
 
-import com.fang.spark.{ImageBinaryTransform, SparkUtils}
-import kafka.serializer.StringDecoder
+import java.awt.image.BufferedImage
+import java.io.{ByteArrayInputStream, File, IOException}
+import javax.imageio.ImageIO
+
+import com.fang.spark.{BeanUtils, ImageMember}
+import kafka.serializer.{DefaultDecoder, StringDecoder}
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.kafka.KafkaUtils
 import org.apache.spark.streaming.{Seconds, StreamingContext}
@@ -41,25 +45,26 @@ object KafkaImageConsumer {
     //      }
     //    }
     //StorageLevel.MEMORY_AND_DISK_2
-    val kafkaStream = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaParams, topics)
+    val kafkaStream = KafkaUtils.createDirectStream[String, Array[Byte], StringDecoder, DefaultDecoder](ssc, kafkaParams, topics)
     kafkaStream.foreachRDD {
       rdd => {
-        rdd.foreach{
-              imageArray => {
-                println(imageArray._1)
-                //println(imageArray._2)
-                SparkUtils.base64StringToImage(imageArray._2,imageArray._1)
-//                val byte = imageArray._2.to
-//                val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(byte))
-////                println(bi.getHeight)
-////                println(bi.getWidth)
-//                try{
-//                  ImageIO.write(bi, "JPEG", new File(imageArray._1))
-//                }catch{
-//                  case e =>println(e.printStackTrace())
-//                }
+        rdd.foreach {
+          imageTuple => {
+            //SparkUtils.base64StringToImage(imageArray._2,imageArray._1)
+            val imageArray = imageTuple._2
+            // println(byte.length)
+            try {
+              val bi = ImageIO.read(new ByteArrayInputStream(imageArray))
+              ImageIO.write(bi, "jpg", new File("/home/fang/imageCopy/" + imageTuple._1))
+            }
+            catch {
+              case e: IOException => {
+                e.printStackTrace()
               }
             }
+            //
+          }
+        }
 
       }
     }

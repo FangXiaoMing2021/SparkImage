@@ -1,6 +1,6 @@
 package com.fang.spark
 
-import kafka.serializer.StringDecoder
+import kafka.serializer.{DefaultDecoder, StringDecoder}
 import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.client.Scan
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
@@ -45,7 +45,7 @@ object KafkaImageConsumer {
       classOf[org.apache.hadoop.hbase.client.Result])
     histogramRDD.cache()
 
-    val kafkaStream = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaParams, topics)
+    val kafkaStream = KafkaUtils.createDirectStream[String, Array[Byte], StringDecoder, DefaultDecoder](ssc, kafkaParams, topics)
     kafkaStream.foreachRDD {
       rdd => {
         rdd.foreachPartition {
@@ -56,8 +56,8 @@ object KafkaImageConsumer {
             //            val table = conn.getTable(userTable)
 
             partition.foreach {
-              imageArray => {
-                val imageBytes = ImageBinaryTransform.decoder.decodeBuffer(imageArray._2)
+              imageTuple => {
+                val imageBytes = imageTuple._2
                 val sift = SparkUtils.getImageSiftOfMat(imageBytes)
                 val myKmeansModel = KMeansModel.load(new SparkContext(sparkConf), "/spark/kmeansModel")
                 val histogramArray = new Array[Int](myKmeansModel.clusterCenters.length)
