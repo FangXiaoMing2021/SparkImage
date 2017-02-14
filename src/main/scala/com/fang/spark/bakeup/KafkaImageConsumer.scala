@@ -1,10 +1,7 @@
 package com.fang.spark.bakeup
 
-import java.awt.image.BufferedImage
 import java.io.{ByteArrayInputStream, File, IOException}
 import javax.imageio.ImageIO
-
-import com.fang.spark.{BeanUtils, ImageMember}
 import kafka.serializer.{DefaultDecoder, StringDecoder}
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.kafka.KafkaUtils

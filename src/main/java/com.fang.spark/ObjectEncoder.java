@@ -11,6 +11,8 @@ public class ObjectEncoder implements kafka.serializer.Encoder<ImageMember>{
     }
    //@Override
     public byte[] toBytes(ImageMember imageMember) { //填写你需要传输的对象
-        return BeanUtils.ObjectToBytes(imageMember);
+
+        //return Utils.ObjectToBytes(imageMember);
+        return null;
     }
 }

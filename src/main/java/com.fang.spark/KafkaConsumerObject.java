@@ -10,11 +10,6 @@ import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaStream;
 import kafka.javaapi.consumer.ConsumerConnector;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,14 +29,14 @@ public class KafkaConsumerObject {
         KafkaStream<byte[], byte[]> stream = messageStreams.get(topic).get(0) ; // 第一个主题
         ConsumerIterator<byte[], byte[]> iter = stream.iterator() ;
         while(iter.hasNext()) {
-            ImageMember imageMember = (ImageMember)BeanUtils.BytesToObject(iter.next().message());
-            try {
-              BufferedImage bi = ImageIO.read(new ByteArrayInputStream(imageMember.getImage()));
-              System.out.println(imageMember.getImageName()+":"+imageMember.getImage().length);
-              ImageIO.write(bi, "jpg", new File("/home/fang/imageCopy/" + imageMember.getImageName()));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+//            ImageMember imageMember = (ImageMember)BeanUtils.BytesToObject(iter.next().message());
+//            try {
+//              BufferedImage bi = ImageIO.read(new ByteArrayInputStream(imageMember.getImage()));
+//              System.out.println(imageMember.getImageName()+":"+imageMember.getImage().length);
+//              ImageIO.write(bi, "jpg", new File("/home/fang/imageCopy/" + imageMember.getImageName()));
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
         }
     }
 }

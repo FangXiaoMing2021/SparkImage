@@ -22,7 +22,7 @@ object HBaseUpLoadImages {
     val beginUpload = System.currentTimeMillis()
     val sparkConf = new SparkConf()
       .setAppName("HBaseUpLoadImages")
-      .setMaster("local[2]")
+      //.setMaster("local[2]")
       //.setMaster("spark://fang-ubuntu:7077")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     val sparkContext = new SparkContext(sparkConf)

@@ -17,12 +17,13 @@ import org.opencv.core.Core
   * 初步预计图像文件夹太大会出现上面的问题
   * To enable core dumping, try "ulimit -c unlimited" before starting Java again
   * 修改了foreachPartition转换操作为map
+  * ./spark-submit --master spark://fang-ubuntu:7077 --class com.fang.spark.HBaseUpLoadImages --jars opencv-2413.jar MyProject.jar
   */
 object SaveImagesInHBase {
   def main(args: Array[String]): Unit = {
     val sparkConf = new SparkConf()
       .setAppName("SaveImagesInHBase")
-      .setMaster("local[2]")
+      //.setMaster("local[2]")
     val sparkContext = new SparkContext(sparkConf)
     val hbaseConf = HBaseConfiguration.create()
     hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")

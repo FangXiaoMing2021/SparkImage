@@ -19,17 +19,13 @@ import org.apache.spark.streaming.kafka.KafkaUtils
 object KafkaImageConsumer {
   def main(args: Array[String]): Unit = {
 
-    val sparkConf = new SparkConf().setAppName("KafkaImageProcess").setMaster("local[4]")
+    val sparkConf = new SparkConf()
+      .setAppName("KafkaImageProcess")
+      //.setMaster("local[4]")
     val ssc = new StreamingContext(sparkConf, Seconds(2))
     ssc.checkpoint("checkpoint")
 
-    val topics = Set("image_topic")
-    val kafkaParams = Map[String, String](
-      "metadata.broker.list" -> "218.199.92.225:9092,218.199.92.226:9092,218.199.92.227:9092"
-      //"serializer.class" -> "kafka.serializer.DefaultDecoder",
-      //"key.serializer.class" -> "kafka.serializer.StringEncoder"
-    )
-
+    //获取HBase中image的特征直方图RDD
     val hbaseConf = HBaseConfiguration.create()
     val tableName = "imagesTest"
     hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
@@ -45,21 +41,24 @@ object KafkaImageConsumer {
       classOf[org.apache.hadoop.hbase.client.Result])
     histogramRDD.cache()
 
+    val topics = Set("image_topic")
+    val kafkaParams = Map[String, String](
+      "metadata.broker.list" -> "218.199.92.225:9092,218.199.92.226:9092,218.199.92.227:9092"
+      //"serializer.class" -> "kafka.serializer.DefaultDecoder",
+      //"key.serializer.class" -> "kafka.serializer.StringEncoder"
+    )
+
     val kafkaStream = KafkaUtils.createDirectStream[String, Array[Byte], StringDecoder, DefaultDecoder](ssc, kafkaParams, topics)
     kafkaStream.foreachRDD {
       rdd => {
         rdd.foreachPartition {
           partition => {
-            //            val conf = HBaseConfiguration.create()
-            //            val conn = ConnectionFactory.createConnection(conf)
-            //            val userTable = TableName.valueOf("tablename")
-            //            val table = conn.getTable(userTable)
-
             partition.foreach {
               imageTuple => {
                 val imageBytes = imageTuple._2
                 val sift = SparkUtils.getImageSiftOfMat(imageBytes)
-                val myKmeansModel = KMeansModel.load(new SparkContext(sparkConf), "/spark/kmeansModel")
+                //加载kmeans模型
+                val myKmeansModel = KMeansModel.load(new SparkContext(sparkConf), SparkUtils.kmeansModelPath)
                 val histogramArray = new Array[Int](myKmeansModel.clusterCenters.length)
                 //计算获取的图像的sift直方图
                 for (i <- 0 to sift.rows()) {

@@ -11,9 +11,10 @@ import sun.misc.{BASE64Decoder, BASE64Encoder}
   * Created by fang on 16-12-16.
   */
 object SparkUtils {
-  // val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n02113799"
+  val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n02113799"
   //val imagePath = "hdfs://218.199.92.225:9000/spark/n01491361"
-  val imagePath = "/home/fang/images/train/3"
+  //val imagePath = "/home/fang/images/train/3"
+  //hdfs dfs -rm -r /spark/kmeansModel
   val kmeansModelPath = "/spark/kmeansModel"
   private[spark] val encoder = new BASE64Encoder
   private[spark] val decoder = new BASE64Decoder
@@ -154,5 +155,49 @@ object SparkUtils {
       }
     }
     data
+  }
+
+  /**
+    * 对象转字节数组
+    *
+    * @param obj
+    * @return
+    */
+  def ObjectToBytes(obj: Any): Array[Byte] = {
+    var bytes = null.asInstanceOf[Array[Byte]]
+    var bo = null.asInstanceOf[ByteArrayOutputStream]
+    var oo = null.asInstanceOf[ObjectOutputStream]
+    try {
+      bo = new ByteArrayOutputStream()
+      oo = new ObjectOutputStream(bo)
+      oo.writeObject(obj)
+      bytes = bo.toByteArray
+    } catch {
+      case e: Exception => {
+        e.printStackTrace()
+      }
+    }
+    bytes
+  }
+
+  /**
+    * 字节数组转对象
+    * @param bytes
+    * @return
+    */
+  def BytesToObject(bytes: Array[Byte]): Object = {
+    var obj = null.asInstanceOf[Object]
+    var bi = null.asInstanceOf[ByteArrayInputStream]
+    var oi = null.asInstanceOf[ObjectInputStream]
+    try {
+      bi = new ByteArrayInputStream(bytes)
+      oi = new ObjectInputStream(bi)
+      obj = oi.readObject
+    } catch {
+      case e: Exception => {
+        e.printStackTrace()
+      }
+    }
+    obj
   }
 }
