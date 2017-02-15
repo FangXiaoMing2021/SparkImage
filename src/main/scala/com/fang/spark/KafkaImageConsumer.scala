@@ -41,6 +41,10 @@ object KafkaImageConsumer {
       classOf[org.apache.hadoop.hbase.client.Result])
     histogramRDD.cache()
 
+    //加载kmeans模型
+    val myKmeansModel = KMeansModel.load(ssc.sparkContext, SparkUtils.kmeansModelPath)
+
+
     val topics = Set("image_topic")
     val kafkaParams = Map[String, String](
       "metadata.broker.list" -> "218.199.92.225:9092,218.199.92.226:9092,218.199.92.227:9092"
@@ -51,14 +55,13 @@ object KafkaImageConsumer {
     val kafkaStream = KafkaUtils.createDirectStream[String, Array[Byte], StringDecoder, DefaultDecoder](ssc, kafkaParams, topics)
     kafkaStream.foreachRDD {
       rdd => {
-        rdd.foreachPartition {
-          partition => {
-            partition.foreach {
+        rdd.foreach{
+        //rdd.foreachPartition {
+//          partition => {
+//            partition.foreach {
               imageTuple => {
                 val imageBytes = imageTuple._2
                 val sift = SparkUtils.getImageSiftOfMat(imageBytes)
-                //加载kmeans模型
-                val myKmeansModel = KMeansModel.load(new SparkContext(sparkConf), SparkUtils.kmeansModelPath)
                 val histogramArray = new Array[Int](myKmeansModel.clusterCenters.length)
                 //计算获取的图像的sift直方图
                 for (i <- 0 to sift.rows()) {
@@ -84,9 +87,9 @@ object KafkaImageConsumer {
               }
             }
 
-          }
-        }
-
+//          }
+//        }
+//
       }
     }
     ssc.start()
