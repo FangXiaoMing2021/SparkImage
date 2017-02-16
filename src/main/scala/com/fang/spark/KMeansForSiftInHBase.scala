@@ -22,7 +22,7 @@ object KMeansForSiftInHBase extends App {
   val beginKMeans = System.currentTimeMillis()
   val sparkConf = new SparkConf()
     //.setMaster("spark://fang-ubuntu:7077")
-    //.setMaster("local[4]")
+    .setMaster("local[4]")
     .setAppName("KMeansForSiftInHBase")
     .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
   val sc = new SparkContext(sparkConf)

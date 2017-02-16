@@ -6,11 +6,13 @@ import org.apache.hadoop.hbase.client.Scan
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil
 import org.apache.hadoop.hbase.util.{Base64, Bytes}
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.SparkConf
 import org.apache.spark.mllib.clustering.KMeansModel
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.apache.spark.streaming.kafka.KafkaUtils
+import org.opencv.core.Core
+import scala.util.control.Breaks._
 
 /**
   * Created by fang on 16-12-21.
@@ -21,7 +23,7 @@ object KafkaImageConsumer {
 
     val sparkConf = new SparkConf()
       .setAppName("KafkaImageProcess")
-      //.setMaster("local[4]")
+      .setMaster("local[4]")
     val ssc = new StreamingContext(sparkConf, Seconds(2))
     ssc.checkpoint("checkpoint")
 
@@ -36,10 +38,18 @@ object KafkaImageConsumer {
     val proto = ProtobufUtil.toScan(scan)
     val ScanToString = Base64.encodeBytes(proto.toByteArray())
     hbaseConf.set(TableInputFormat.SCAN, ScanToString)
+
     val histogramRDD = ssc.sparkContext.newAPIHadoopRDD(hbaseConf, classOf[TableInputFormat],
       classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
       classOf[org.apache.hadoop.hbase.client.Result])
-    histogramRDD.cache()
+    val histogramMapRDD = histogramRDD.map {
+      case (_, result) => {
+        val key = Bytes.toString(result.getRow)
+        val histogram = SparkUtils.deserializeArray(result.getValue("image".getBytes, "histogram".getBytes))
+        (key, histogram)
+      }
+    }
+    histogramMapRDD.cache()
 
     //加载kmeans模型
     val myKmeansModel = KMeansModel.load(ssc.sparkContext, SparkUtils.kmeansModelPath)
@@ -51,51 +61,102 @@ object KafkaImageConsumer {
       //"serializer.class" -> "kafka.serializer.DefaultDecoder",
       //"key.serializer.class" -> "kafka.serializer.StringEncoder"
     )
-
     val kafkaStream = KafkaUtils.createDirectStream[String, Array[Byte], StringDecoder, DefaultDecoder](ssc, kafkaParams, topics)
-    kafkaStream.foreachRDD {
-      rdd => {
-        rdd.foreach{
-        //rdd.foreachPartition {
-//          partition => {
-//            partition.foreach {
-              imageTuple => {
-                val imageBytes = imageTuple._2
-                val sift = SparkUtils.getImageSiftOfMat(imageBytes)
-                val histogramArray = new Array[Int](myKmeansModel.clusterCenters.length)
-                //计算获取的图像的sift直方图
-                for (i <- 0 to sift.rows()) {
-                  val data = new Array[Double](sift.cols())
-                  sift.row(i).get(0, 0, data)
-                  val predictedClusterIndex: Int = myKmeansModel.predict(Vectors.dense(data))
-                  histogramArray(predictedClusterIndex) = histogramArray(predictedClusterIndex) + 1
-                }
 
-                //计算图像直方图距离,并排序
-                val matchImages = histogramRDD.map {
-                  case (_, result) =>
-                    val key = Bytes.toString(result.getRow)
-                    val histogram = SparkUtils.deserializeArray(result.getValue("image".getBytes, "histogram".getBytes))
-                    var sum = 0;
-                    for (i <- 0 to histogram.length) {
-                      val sub = histogram(i) - histogramArray(i)
-                      sum = sum + sub * sub
-                    }
-                    (sum, key)
-                }.sortByKey()
-                matchImages.take(10).foreach { tuple => println(tuple._2) }
-              }
+    val histogramStream = kafkaStream.map {
+      imageTuple => {
+        //加载Opencv库,在每个分区都需加载
+        System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
+        val imageBytes = imageTuple._2
+        val sift = SparkUtils.getImageSift(imageBytes)
+        val histogramArray = new Array[Int](myKmeansModel.clusterCenters.length)
+        if (!sift.isEmpty) {
+          val siftByteArray = sift.get
+          val siftFloatArray = SparkUtils.byteArrToFloatArr(siftByteArray)
+          val size = siftFloatArray.length / 128
+          for (i <- 0 to size - 1) {
+            val xs: Array[Float] = new Array[Float](128)
+            for (j <- 0 to 127) {
+              xs(j) = siftFloatArray(i * 128 + j)
             }
-
-//          }
-//        }
-//
+            val predictedClusterIndex: Int = myKmeansModel.predict(Vectors.dense(xs.map(i => i.toDouble)))
+            histogramArray(predictedClusterIndex) = histogramArray(predictedClusterIndex)
+          }
+        }
+        (imageTuple._1, histogramArray)
       }
     }
+    val resultImageRDD = histogramStream.transform {
+      imageHistogramRDD => {
+        val cartesianRDD = imageHistogramRDD.cartesian(histogramMapRDD)
+        val computeHistogramSum = cartesianRDD.map {
+          tuple => {
+            val imageHistogram = tuple._1
+            val histogramHBase = tuple._2
+            var sum = 0
+            for (i <- 0 to imageHistogram._2.length - 1) {
+              val sub = imageHistogram._2(i) - histogramHBase._2(i)
+              sum = sum + sub * sub
+            }
+            (imageHistogram._1, (sum, histogramHBase._1))
+          }
+        }
+
+        val groupRDD = computeHistogramSum.groupByKey()
+        val matchImageRDD = groupRDD.map {
+          tuple => {
+            val top10 = Array[(Int, String)](
+              (Int.MaxValue, "0"), (Int.MaxValue, "0"),
+              (Int.MaxValue, "0"), (Int.MaxValue, "0"),
+              (Int.MaxValue, "0"), (Int.MaxValue, "0"),
+              (Int.MaxValue, "0"), (Int.MaxValue, "0"),
+              (Int.MaxValue, "0"), (Int.MaxValue, "0"))
+            val imageName = tuple._1
+            val similarImageIter = tuple._2
+            for (similarImage <- similarImageIter) {
+              breakable {
+                for (i <- 0 until 10) {
+                  if (top10(i)._1 == Int.MaxValue) {
+                    top10(i) = similarImage
+                    break
+                  } else if (similarImage._1 < top10(i)._1) {
+                    var j = 2
+                    while (j > i) {
+                      top10(j) = top10(j - 1)
+                      j = j - 1
+                    }
+                    top10(i) = similarImage
+                    break
+                  }
+                }
+              }
+            }
+            (imageName, top10)
+          }
+        }
+        matchImageRDD
+      }
+    }
+
+    resultImageRDD.foreachRDD {
+      rdd => {
+        rdd.foreach {
+          imageTuple => {
+            println(imageTuple._1 + "similar:")
+            println("============================")
+            for (i <- imageTuple._2) {
+              println(i)
+            }
+            println("============================")
+          }
+        }
+      }
+    }
+    //保存结果
+    //resultImageRDD.saveAsTextFiles("./result")
     ssc.start()
     ssc.awaitTermination()
     ssc.stop()
+
   }
-
-
 }

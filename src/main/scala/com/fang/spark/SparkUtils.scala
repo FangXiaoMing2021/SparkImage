@@ -15,7 +15,7 @@ object SparkUtils {
   //val imagePath = "hdfs://218.199.92.225:9000/spark/n01491361"
   //val imagePath = "/home/fang/images/train/3"
   //hdfs dfs -rm -r /spark/kmeansModel
-  val kmeansModelPath = "/spark/kmeansModel"
+  val kmeansModelPath = "./spark/kmeansModel"
   private[spark] val encoder = new BASE64Encoder
   private[spark] val decoder = new BASE64Decoder
   //使用int，double都出错，改为float
@@ -102,7 +102,7 @@ object SparkUtils {
     }
   }
 
-  //获取图像的sift特征
+  //获取图像的sift特征,返回Mat
   def getImageSiftOfMat(image: Array[Byte]): Mat = {
     val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(image))
     val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8U)
@@ -117,7 +117,7 @@ object SparkUtils {
     de.compute(test_mat, mkp, desc)
     desc
   }
-  //获取图像的sift特征
+  //获取图像的sift特征,返回Array[Byte]
   def getImageSift(image: Array[Byte]): Option[Array[Byte]] = {
     val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(image))
     val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8U)
@@ -199,5 +199,25 @@ object SparkUtils {
       }
     }
     obj
+  }
+
+  //使用int，double都出错，改为float
+  def byteArrToFloatArr(b: Array[Byte]): Array[Float] = {
+    try {
+      val in = new ObjectInputStream(new ByteArrayInputStream(b))
+      val data = in.readObject.asInstanceOf[Array[Float]]
+      in.close()
+      data
+    }
+    catch {
+      case cnfe: ClassNotFoundException => {
+        cnfe.printStackTrace()
+        null
+      }
+      case ioe: IOException => {
+        ioe.printStackTrace()
+        null
+      }
+    }
   }
 }
