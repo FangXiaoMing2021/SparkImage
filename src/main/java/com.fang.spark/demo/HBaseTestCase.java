@@ -1,4 +1,4 @@
-package com.fang.spark;
+package com.fang.spark.demo;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -7,34 +7,41 @@ import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
+
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 //import java.util.NavigableMap;
+
 /**
  * Created by hadoop on 16-11-24.
  */
 public class HBaseTestCase {
     static Configuration cfg = HBaseConfiguration.create();
+
     //创建一张表，通过Admin HTableDescriptor 来创建
-    public static void createTable(Connection connection,TableName tableName, String columnFamily)throws Exception{
+    public static void createTable(Connection connection, TableName tableName, String columnFamily) throws Exception {
         Admin admin = connection.getAdmin();
-        if(admin.tableExists(tableName)){
+        if (admin.tableExists(tableName)) {
             System.out.println("table Exists!");
-        }else{
+        } else {
             HTableDescriptor tableDesc = new HTableDescriptor(tableName);
             tableDesc.addFamily(new HColumnDescriptor(columnFamily));
             admin.createTable(tableDesc);
             System.out.println("create table success!");
         }
     }
+
     //添加一条数据，通过HTable Put 为已经存在的表来添加数据
-    public static void put(Connection connection,TableName tableName,String row,String columnFamily,String column,String data)throws Exception{
+    public static void put(Connection connection, TableName tableName, String row, String columnFamily, String column, String data) throws Exception {
         Table table = connection.getTable(tableName);
         Put p1 = new Put(Bytes.toBytes(row));
-        p1.addColumn(Bytes.toBytes(columnFamily),Bytes.toBytes(column),Bytes.toBytes(data));
+        p1.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes(column), Bytes.toBytes(data));
         table.put(p1);
     }
+
     //根据row key获取表中的该行数据
-    public static void get(Connection connection,TableName tableName,String row)throws IOException {
+    public static void get(Connection connection, TableName tableName, String row) throws IOException {
         Table table = connection.getTable(tableName);
         Get g = new Get(Bytes.toBytes(row));
         Result result = table.get(g);
@@ -51,10 +58,11 @@ public class HBaseTestCase {
 //                }
 //            }
 //        }
-        System.out.println("Get:"+result);
+        System.out.println("Get:" + result);
     }
+
     //根据TableName获取整张表中的数据
-    public static void scan(Connection connection,TableName tableName)throws Exception{
+    public static void scan(Connection connection, TableName tableName) throws Exception {
         Table table = connection.getTable(tableName);
         Scan s = new Scan();
         ResultScanner rs = table.getScanner(s);
@@ -79,40 +87,61 @@ public class HBaseTestCase {
 //        }
 
     }
+
     //删除表中的数据
-    public static boolean delete(Connection connection,TableName tableName) throws IOException{
+    public static boolean delete(Connection connection, TableName tableName) throws IOException {
         Admin admin = connection.getAdmin();
-        if(admin.tableExists(tableName)){
-            try{
+        if (admin.tableExists(tableName)) {
+            try {
                 admin.disableTable(tableName);
                 admin.deleteTable(tableName);
-            }catch(Exception ex){
+            } catch (Exception ex) {
                 ex.printStackTrace();
                 return false;
             }
         }
         return true;
     }
-    public static void main(String args[]){
-        TableName tableName = TableName.valueOf("hbase_tb");
-        String columnFamily = "cf";
-        try{
-            cfg.set("hbase.zookeeper.property.clientPort", "2181");
-            cfg.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu");
-            Connection connection = ConnectionFactory.createConnection(cfg);
-            HBaseTestCase.createTable(connection,tableName,columnFamily);
-            HBaseTestCase.put(connection,tableName,"row1",columnFamily,"cl1","data");
-            HBaseTestCase.put(connection,tableName,"row2",columnFamily,"cl1","fang");
-            HBaseTestCase.put(connection,tableName,"row2",columnFamily,"cl2","fang");
-            HBaseTestCase.put(connection,tableName,"row2",columnFamily,"cl3","fang");
-            HBaseTestCase.put(connection,tableName,"row3",columnFamily,"cl4","fang");
-            HBaseTestCase.get(connection,tableName,"row1");
-            HBaseTestCase.scan(connection,tableName);
-            if(true==HBaseTestCase.delete(connection,tableName)){
-                System.out.println("Delete table:"+tableName.toString()+" success!");
-            }
-        }catch(Exception e){
-            e.printStackTrace();
+
+    public static void main(String args[]) throws IOException {
+//            HBaseTestCase.createTable(connection,tableName,columnFamily);
+//            HBaseTestCase.put(connection,tableName,"row1",columnFamily,"cl1","data");
+//            HBaseTestCase.put(connection,tableName,"row2",columnFamily,"cl1","fang");
+//            HBaseTestCase.put(connection,tableName,"row2",columnFamily,"cl2","fang");
+//            HBaseTestCase.put(connection,tableName,"row2",columnFamily,"cl3","fang");
+//            HBaseTestCase.put(connection,tableName,"row3",columnFamily,"cl4","fang");
+//            HBaseTestCase.scan(connection,tableName);
+//            if(true==HBaseTestCase.delete(connection,tableName)){
+//                System.out.println("Delete table:"+tableName.toString()+" success!");
+//            }
+        TableName tableName = TableName.valueOf("similarImageTable");
+        String columnFamily = "similarImage";
+        cfg.set("hbase.zookeeper.property.clientPort", "2181");
+        cfg.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu");
+        Connection connection = ConnectionFactory.createConnection(cfg);
+        Table table = connection.getTable(tableName);
+        Get g = new Get(Bytes.toBytes("3.jpg"));
+        Result result = table.get(g);
+        List<byte[]> similarImageByteList = new ArrayList<byte[]>();
+        for(int i=1;i<=10;i++){
+            byte[] similarImageByte = result.getValue(Bytes.toBytes(columnFamily), Bytes.toBytes("image_"+i));
+            similarImageByteList.add(similarImageByte);
         }
+        List<Get> similarImageGetList = new ArrayList<Get>();
+        for(int i=0;i<10;i++){
+            byte[] similarImageByte=similarImageByteList.get(i);
+            String imageName = Bytes.toString(similarImageByte);
+            Get get = new Get(Bytes.toBytes(imageName.split("#")[0]));
+            similarImageGetList.add(get);
+        }
+        Table imageTable = connection.getTable(TableName.valueOf("imagesTable"));
+        Result[] imageResult = imageTable.get(similarImageGetList);
+        for(Result similarImage:imageResult){
+            byte[] imageBinary = similarImage.getValue(Bytes.toBytes("image"), Bytes.toBytes("binary"));
+            System.out.println(imageBinary.length);
+        }
+
+
+
     }
 }

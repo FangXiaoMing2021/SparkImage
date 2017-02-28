@@ -5,7 +5,8 @@ import java.awt.image.{BufferedImage, DataBufferByte}
 import java.io.{ByteArrayInputStream, File}
 import javax.imageio.ImageIO
 
-import com.fang.spark.{ImageInputFormat, Utils}
+import com.fang.spark.Utils
+import com.fang.spark.demo.ImageInputFormat
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.io.Text
 import org.apache.hadoop.mapred.{FileInputFormat, TextInputFormat}

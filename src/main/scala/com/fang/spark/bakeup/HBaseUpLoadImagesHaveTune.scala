@@ -1,6 +1,7 @@
 package com.fang.spark.bakeup
 
-import com.fang.spark.{ImageInputFormat, SparkUtils, Utils}
+import com.fang.spark.demo.ImageInputFormat
+import com.fang.spark.{SparkUtils, Utils}
 import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.util.Bytes

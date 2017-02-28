@@ -147,6 +147,31 @@ object KafkaImageConsumer {
 //        }
 //      }
 //    }
+
+    histogramStream.foreachRDD {
+      rdd => {
+        rdd.foreach {
+          imageTuple => {
+            println(imageTuple._1 + " 直方图:")
+            println("#########################")
+            for (i <- imageTuple._2) {
+              println(i)
+            }
+            println("#########################")
+          }
+        }
+      }
+    }
+    //保存结果
+    //resultImageRDD.saveAsTextFiles("./result")
+    //   val saveRDD = histogramMapRDD.map{
+    //      tuple=>{
+    //        val imageName = tuple._1
+    //        val tupleN = Tuple4[Int,Int,Int,Int](tuple._2(0),tuple._2(1),tuple._2(2),tuple._2(3))
+    //        (imageName,tupleN)
+    //      }
+    //    }
+    //    saveRDD.saveAsTextFile("./histogram")
     resultImageRDD.saveAsTextFiles("./result")
     ssc.start()
     ssc.awaitTermination()

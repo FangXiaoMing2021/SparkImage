@@ -4,7 +4,8 @@ import java.io._
 import java.util.{HashMap, Properties}
 import javax.imageio.ImageIO
 
-import com.fang.spark.{ImageMember, ObjectEncoder, SparkUtils}
+import com.fang.spark.demo.{ImageMember, ObjectEncoder}
+import com.fang.spark.SparkUtils
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 
 /**

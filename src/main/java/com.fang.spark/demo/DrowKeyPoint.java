@@ -60,10 +60,25 @@ public class DrowKeyPoint {
         ImageIcon icon=new ImageIcon(img2);
         JFrame frame=new JFrame();
         frame.setLayout(new FlowLayout());
-        frame.setSize(img2.getWidth(null)+50, img2.getHeight(null)+50);
+        frame.setSize(img2.getWidth(null)*3+50, img2.getHeight(null)*3+50);
         JLabel lbl=new JLabel();
         lbl.setIcon(icon);
+        JLabel lbl1=new JLabel();
+        lbl1.setIcon(icon);
+        JLabel lbl2=new JLabel();
+        lbl2.setIcon(icon);
+        JLabel lbl3=new JLabel();
+        lbl3.setIcon(icon);
+        JLabel lbl4=new JLabel();
+        lbl4.setIcon(icon);
+        JLabel lbl5=new JLabel();
+        lbl5.setIcon(icon);
         frame.add(lbl);
+        frame.add(lbl1);
+        frame.add(lbl2);
+        frame.add(lbl3);
+        frame.add(lbl4);
+        frame.add(lbl5);
         frame.setVisible(true);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }

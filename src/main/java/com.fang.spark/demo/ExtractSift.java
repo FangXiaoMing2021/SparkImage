@@ -1,4 +1,4 @@
-package com.fang.spark;
+package com.fang.spark.demo;
 
 /**
  * Created by fang on 16-12-12.
