@@ -12,7 +12,7 @@ import sun.misc.{BASE64Decoder, BASE64Encoder}
   */
 object SparkUtils {
   val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n02113799"
-  //val imagePath = "hdfs://218.199.92.225:9000/spark/n01491361"
+ // val imagePath = "hdfs://218.199.92.225:9000/spark/n01491361"
   //val imagePath = "/home/fang/images/train/3"
   //hdfs dfs -rm -r /spark/kmeansModel
   val kmeansModelPath = "./spark/kmeansModel"
@@ -133,7 +133,7 @@ object SparkUtils {
     test_mat.release()
     mkp.release()
     //判断是否有特征值
-    if (desc.rows() != 0) {
+    if (desc.rows()!= 0) {
       Some(Utils.serializeMat(desc))
     } else {
       None
