@@ -15,7 +15,7 @@ object SparkUtils {
  // val imagePath = "hdfs://218.199.92.225:9000/spark/n01491361"
   //val imagePath = "/home/fang/images/train/3"
   //hdfs dfs -rm -r /spark/kmeansModel
-  val kmeansModelPath = "./spark/kmeansModel"
+  val kmeansModelPath = "/spark/kmeansModel"
   private[spark] val encoder = new BASE64Encoder
   private[spark] val decoder = new BASE64Decoder
   //使用int，double都出错，改为float

@@ -28,7 +28,7 @@ object KafkaImageConsumer {
 
     val sparkConf = new SparkConf()
       .setAppName("KafkaImageProcess")
-      .setMaster("local[4]")
+      //.setMaster("local[4]")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     val ssc = new StreamingContext(sparkConf, Seconds(2))
     ssc.checkpoint("checkpoint")
@@ -169,7 +169,7 @@ object KafkaImageConsumer {
       }
     }
 
-    /*
+    /**
      * 保存从kafka接受的图像数据
      * object not serializable (class: org.apache.hadoop.hbase.io.ImmutableBytesWritable
      * 调换foreachRDD 和map
@@ -201,7 +201,7 @@ object KafkaImageConsumer {
       }
     }
 
-    /*
+    /**
      * 保存查询到的相似图像名称
      */
     topNSimilarImageDStream.foreachRDD {
@@ -238,7 +238,7 @@ object KafkaImageConsumer {
   }
 
 
-  /*
+  /**
    *打印相似图像的名称
    */
   def printStreamRDD(printRDD: DStream[(String, Array[(Int, String)])]): Unit = {
