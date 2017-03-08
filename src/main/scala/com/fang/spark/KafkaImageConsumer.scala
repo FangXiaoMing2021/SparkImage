@@ -13,7 +13,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.mllib.clustering.KMeansModel
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{Seconds, StreamingContext}
+import org.apache.spark.streaming.{Milliseconds, StreamingContext}
 import org.apache.spark.streaming.kafka.KafkaUtils
 import org.opencv.core.Core
 
@@ -22,17 +22,18 @@ import scala.util.control.Breaks._
 /**
   * Created by fang on 16-12-21.
   * 从Kafka获取图像数据,计算该图像的sift直方图,和HBase中的图像直方图对比,输出最相近的图像名
+  * 1488789541281
+  * 1488789554300
   */
 object KafkaImageConsumer {
   def main(args: Array[String]): Unit = {
-
     val sparkConf = new SparkConf()
       .setAppName("KafkaImageProcess")
       //.setMaster("local[4]")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    val ssc = new StreamingContext(sparkConf, Seconds(2))
+    val ssc = new StreamingContext(sparkConf, Milliseconds(500))
     ssc.checkpoint("checkpoint")
-
+    ssc.sparkContext.setLogLevel("WARN")
     //连接HBase参数配置
     val hbaseConf = HBaseConfiguration.create()
     val tableName = "imagesTest"
@@ -59,7 +60,6 @@ object KafkaImageConsumer {
       }
     }
     histogramFromHBaseRDD.cache()
-
     //加载kmeans模型
     val myKmeansModel = KMeansModel.load(ssc.sparkContext, SparkUtils.kmeansModelPath)
 
@@ -98,7 +98,39 @@ object KafkaImageConsumer {
       }
     }
 
-    imageTupleDStream.cache()
+    //imageTupleDStream.cache()
+    /**
+      * 保存从kafka接受的图像数据
+      * object not serializable (class: org.apache.hadoop.hbase.io.ImmutableBytesWritable
+      * 调换foreachRDD 和map
+      */
+//    imageTupleDStream.foreachRDD {
+//      rdd => {
+//        if (!rdd.isEmpty()) {
+//          val hConfig = HBaseConfiguration.create()
+//          val tableName = "imagesTest"
+//          hConfig.set("hbase.zookeeper.property.clientPort", "2181")
+//          hConfig.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
+//          val jobConf = new JobConf(hConfig)
+//          jobConf.setOutputFormat(classOf[TableOutputFormat])
+//          jobConf.set(TableOutputFormat.OUTPUT_TABLE, tableName)
+//          //保存从kafka接受的图片数据
+//          rdd.map {
+//            tuple => {
+//              val put: Put = new Put(Bytes.toBytes(tuple._1))
+//              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), tuple._2)
+//              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"), Utils.serializeObject(tuple._4))
+//              val sift = tuple._3
+//              if (!sift.isEmpty) {
+//                put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
+//              }
+//              (new ImmutableBytesWritable, put)
+//            }
+//          }.saveAsHadoopDataset(jobConf)
+//          println("================保存============")
+//        }
+//      }
+//    }
 
     val histogramFromKafkaDStream = imageTupleDStream.map(tuple => (tuple._1, tuple._4))
 
@@ -157,49 +189,19 @@ object KafkaImageConsumer {
       }
     }
     //触发action,
-    imageTupleDStream.foreachRDD {
-      rdd => {
-        rdd.foreach {
-          imageTuple => {
-            println("============================")
-            println(imageTuple._1 )
-            println("============================")
-          }
-        }
-      }
-    }
+//    imageTupleDStream.foreachRDD {
+//      rdd => {
+//        rdd.foreach {
+//          imageTuple => {
+//            println("============================")
+//            println(imageTuple._1 )
+//            println("============================")
+//          }
+//        }
+//      }
+//    }
 
-    /**
-     * 保存从kafka接受的图像数据
-     * object not serializable (class: org.apache.hadoop.hbase.io.ImmutableBytesWritable
-     * 调换foreachRDD 和map
-     */
-    imageTupleDStream.foreachRDD {
-      rdd => {
-        if (!rdd.isEmpty()) {
-          val hConfig = HBaseConfiguration.create()
-          val tableName = "imagesTest"
-          hConfig.set("hbase.zookeeper.property.clientPort", "2181")
-          hConfig.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
-          val jobConf = new JobConf(hConfig)
-          jobConf.setOutputFormat(classOf[TableOutputFormat])
-          jobConf.set(TableOutputFormat.OUTPUT_TABLE, tableName)
-          //保存从kafka接受的图片数据
-          rdd.map {
-            tuple => {
-              val put: Put = new Put(Bytes.toBytes(tuple._1))
-              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), tuple._2)
-              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"), Utils.serializeObject(tuple._4))
-              val sift = tuple._3
-              if (!sift.isEmpty) {
-                put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
-              }
-              (new ImmutableBytesWritable, put)
-            }
-          }.saveAsHadoopDataset(jobConf)
-        }
-      }
-    }
+
 
     /**
      * 保存查询到的相似图像名称
@@ -228,6 +230,10 @@ object KafkaImageConsumer {
             //.saveAsNewAPIHadoopDataset(jobConf)
             // java.lang.NullPointerException
           }.saveAsHadoopDataset(jobConf)
+          println("=======================保存相似图像=======================")
+          val saveSimilarTime = System.currentTimeMillis()
+          println("获得相似图像的时间"+saveSimilarTime)
+          println("=======================保存相似图像=======================")
         }
       }
     }

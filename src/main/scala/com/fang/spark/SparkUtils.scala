@@ -12,7 +12,7 @@ import sun.misc.{BASE64Decoder, BASE64Encoder}
   */
 object SparkUtils {
   val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n02113799"
- // val imagePath = "hdfs://218.199.92.225:9000/spark/n01491361"
+  //val imagePath = "hdfs://218.199.92.225:9000/spark/n01491361"
   //val imagePath = "/home/fang/images/train/3"
   //hdfs dfs -rm -r /spark/kmeansModel
   val kmeansModelPath = "/spark/kmeansModel"
@@ -125,9 +125,15 @@ object SparkUtils {
     test_mat.put(0, 0, data)
     val desc = new Mat
     val fd = FeatureDetector.create(FeatureDetector.SIFT)
+    /*
+      结合surf和harris
+     */
+    //val fd1 = FeatureDetector.create(FeatureDetector.SURF)
+    //val fd = FeatureDetector.create(FeatureDetector.HARRIS)
     val mkp = new MatOfKeyPoint
     fd.detect(test_mat, mkp)
     val de = DescriptorExtractor.create(DescriptorExtractor.SIFT)
+    //val de1 = DescriptorExtractor.create(DescriptorExtractor.SURF)
     //提取sift特征
     de.compute(test_mat, mkp, desc)
     test_mat.release()

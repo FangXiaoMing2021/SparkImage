@@ -31,8 +31,10 @@ object KafkaImageProducer {
       val image = out.toByteArray
       val message = new ProducerRecord[String, Array[Byte]](topic, file.getName, image)
       producer.send(message)
-      Thread.sleep(100)
+      println("发送图片时间:"+System.currentTimeMillis())
+      //Thread.sleep(100)
     }
+
     producer.close()
   }
 }

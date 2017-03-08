@@ -21,7 +21,13 @@ public class DrowKeyPoint {
         // Features SEARCH
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
         Mat image = Highgui.imread("/home/fang/images/me.jpg");
-        int detectorType = FeatureDetector.SIFT;
+        int detectorType = FeatureDetector.GFTT;
+        //int detectorType = FeatureDetector.HARRIS;
+        //int detectorType = FeatureDetector.SIFT;
+
+
+
+
         FeatureDetector detector = FeatureDetector.create(detectorType);
         Mat mask = new Mat();
         MatOfKeyPoint keypoints = new MatOfKeyPoint();
