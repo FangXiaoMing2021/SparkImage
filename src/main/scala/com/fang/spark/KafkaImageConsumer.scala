@@ -230,9 +230,11 @@ object KafkaImageConsumer {
             //.saveAsNewAPIHadoopDataset(jobConf)
             // java.lang.NullPointerException
           }.saveAsHadoopDataset(jobConf)
-          println("=======================保存相似图像=======================")
-          val saveSimilarTime = System.currentTimeMillis()
-          println("获得相似图像的时间"+saveSimilarTime)
+         // println("处理的图片数量"+rdd.count())
+   //       println("=======================保存相似图像=======================")
+//          val saveSimilarTime = System.currentTimeMillis()
+//          println("获得相似图像的时间"+saveSimilarTime)
+          rdd.foreach(tuple=>println(tuple._1+" 获得相似图像的时间 "+System.currentTimeMillis()))
           println("=======================保存相似图像=======================")
         }
       }

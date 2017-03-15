@@ -23,7 +23,7 @@ object SaveImagesInHBase {
   def main(args: Array[String]): Unit = {
     val sparkConf = new SparkConf()
       .setAppName("SaveImagesInHBase")
-      //.setMaster("local[2]")
+      .setMaster("local[2]")
     val sparkContext = new SparkContext(sparkConf)
     val hbaseConf = HBaseConfiguration.create()
     hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
@@ -32,7 +32,11 @@ object SaveImagesInHBase {
     jobConf.set(TableOutputFormat.OUTPUT_TABLE, "imagesTest")
     //设置job的输出格式
     jobConf.setOutputFormat(classOf[TableOutputFormat])
+    val begUpload = System.currentTimeMillis()
     val imagesRDD = sparkContext.binaryFiles(SparkUtils.imagePath)
+    SparkUtils.printComputeTime(begUpload, "upload image")
+    //统计计算sift时间
+    val begComputeSift = System.currentTimeMillis()
     val imagesResult = imagesRDD.map {
       imageFile => {
         //加载Opencv库,在每个分区都需加载
@@ -47,12 +51,18 @@ object SaveImagesInHBase {
         val sift = SparkUtils.getImageSift(imageBinary)
         if (!sift.isEmpty) {
           put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
+        }else{
+          println(imageName)
         }
         (new ImmutableBytesWritable, put)
       }
     }
+    SparkUtils.printComputeTime(begComputeSift, "compute sift")
+    //保存时间
+    val saveImageTime = System.currentTimeMillis()
     // imagesResult.saveAsNewAPIHadoopDataset(jobConf)
     imagesResult.saveAsHadoopDataset(jobConf)
+    SparkUtils.printComputeTime(saveImageTime, "save image time")
     sparkContext.stop()
   }
 

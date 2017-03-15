@@ -17,16 +17,14 @@ import java.awt.image.DataBufferByte;
  * Created by fang on 17-1-12.
  */
 public class DrowKeyPoint {
+    private static final int IMAGE_WIDTH = 800;
     public static void  main(String args[]){
         // Features SEARCH
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-        Mat image = Highgui.imread("/home/fang/images/me.jpg");
+        Mat image = Highgui.imread("/home/fang/images/11.jpg");
         int detectorType = FeatureDetector.GFTT;
         //int detectorType = FeatureDetector.HARRIS;
         //int detectorType = FeatureDetector.SIFT;
-
-
-
 
         FeatureDetector detector = FeatureDetector.create(detectorType);
         Mat mask = new Mat();
@@ -61,30 +59,32 @@ public class DrowKeyPoint {
         return image;
     }
     public static void displayImage(Image img2) {
-
+        int height = (IMAGE_WIDTH*img2.getHeight(null))/img2.getWidth(null);
+        ImageIcon icon=new ImageIcon(img2.getScaledInstance(IMAGE_WIDTH,height,Image.SCALE_SMOOTH));
         //BufferedImage img=ImageIO.read(new File("/HelloOpenCV/lena.png"));
-        ImageIcon icon=new ImageIcon(img2);
+        //ImageIcon icon=new ImageIcon(img2);
         JFrame frame=new JFrame();
         frame.setLayout(new FlowLayout());
-        frame.setSize(img2.getWidth(null)*3+50, img2.getHeight(null)*3+50);
+        frame.setSize(img2.getWidth(null)/2, img2.getHeight(null)/2);
         JLabel lbl=new JLabel();
         lbl.setIcon(icon);
-        JLabel lbl1=new JLabel();
-        lbl1.setIcon(icon);
-        JLabel lbl2=new JLabel();
-        lbl2.setIcon(icon);
-        JLabel lbl3=new JLabel();
-        lbl3.setIcon(icon);
-        JLabel lbl4=new JLabel();
-        lbl4.setIcon(icon);
-        JLabel lbl5=new JLabel();
-        lbl5.setIcon(icon);
         frame.add(lbl);
-        frame.add(lbl1);
-        frame.add(lbl2);
-        frame.add(lbl3);
-        frame.add(lbl4);
-        frame.add(lbl5);
+//        JLabel lbl1=new JLabel();
+//        lbl1.setIcon(icon);
+//        JLabel lbl2=new JLabel();
+//        lbl2.setIcon(icon);
+//        JLabel lbl3=new JLabel();
+//        lbl3.setIcon(icon);
+//        JLabel lbl4=new JLabel();
+//        lbl4.setIcon(icon);
+//        JLabel lbl5=new JLabel();
+//        lbl5.setIcon(icon);
+//        frame.add(lbl);
+//        frame.add(lbl1);
+//        frame.add(lbl2);
+//        frame.add(lbl3);
+//        frame.add(lbl4);
+//        frame.add(lbl5);
         frame.setVisible(true);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }

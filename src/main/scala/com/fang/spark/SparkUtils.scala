@@ -11,9 +11,10 @@ import sun.misc.{BASE64Decoder, BASE64Encoder}
   * Created by fang on 16-12-16.
   */
 object SparkUtils {
-  val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n02113799"
+  //val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n02090721"
   //val imagePath = "hdfs://218.199.92.225:9000/spark/n01491361"
-  //val imagePath = "/home/fang/images/train/3"
+  val imagePath = "/home/fang/images/train/3"
+  // n02259212
   //hdfs dfs -rm -r /spark/kmeansModel
   val kmeansModelPath = "/spark/kmeansModel"
   private[spark] val encoder = new BASE64Encoder
@@ -144,6 +145,10 @@ object SparkUtils {
     } else {
       None
     }
+    //desc.push_back()
+
+//    val dstMat:Mat = desc.column(4);             //M为目的矩阵 3*4
+//    srcMat.copyTo(dstMat);
   }
   def deserializeArray(b: Array[Byte]): Array[Int] = {
     var data = null.asInstanceOf[Array[Int]]

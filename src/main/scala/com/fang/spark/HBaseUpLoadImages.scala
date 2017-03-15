@@ -33,7 +33,6 @@ object HBaseUpLoadImages {
     SparkUtils.printComputeTime(begUpload, "upload image")
     println("num of partition " + imagesRDD.getNumPartitions)
     imagesRDD.foreachPartition {
-
       iter => {
         //加载Opencv库,在每个分区都需加载
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME)

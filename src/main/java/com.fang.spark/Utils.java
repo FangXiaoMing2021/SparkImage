@@ -126,4 +126,22 @@ public class Utils {
         }
     }
 
+    /**
+     * 合并两个Mat对象
+     * @param A
+     * @param B
+     * @return
+     */
+    Mat mergeRows(Mat A, Mat B)
+    {
+        int totalRows = A.rows() + B.rows();
+
+        Mat mergedDescriptors=new Mat();
+        Mat submat = mergedDescriptors.rowRange(0, A.rows());
+        A.copyTo(submat);
+        submat = mergedDescriptors.rowRange(A.rows(), totalRows);
+        B.copyTo(submat);
+        return mergedDescriptors;
+    }
+
 }
