@@ -27,6 +27,7 @@ public class SimilarImageView extends JFrame implements ActionListener{
     private  Configuration cfg = HBaseConfiguration.create();
     private  int index = 0;
     private  Button nextButton = new Button("下一张");
+    private  JPanel buttonPanel = new JPanel();
     private  List<byte[]> similarImageByteList = new ArrayList<byte[]>();
     private  List<Get> similarImageNameList;
     private  List<JLabel> labelList = new ArrayList<JLabel>();
@@ -61,7 +62,8 @@ public class SimilarImageView extends JFrame implements ActionListener{
         view.setSize(IMAGE_WIDTH*3+50, IMAGE_HEIGHT *4+50);
         view.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         view.nextButton.setSize(IMAGE_WIDTH*3+50,40);
-        view.add(view.nextButton);
+        view.buttonPanel.add(view.nextButton);
+        view.add(view.buttonPanel);
         for(int i=FIRST_INDEX;i<NUMBER_OF_SIMILAR_IMAGE;i++){
             JLabel lbl=new JLabel();
             view.labelList.add(lbl);

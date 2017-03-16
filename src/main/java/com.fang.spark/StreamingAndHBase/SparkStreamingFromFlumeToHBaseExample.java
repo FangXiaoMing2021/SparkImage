@@ -108,8 +108,7 @@ public class SparkStreamingFromFlumeToHBaseExample {
           }
         });
 
-    lastCounts
-        .foreach(new Function2<JavaPairRDD<String, Integer>, Time, Void>() {
+    lastCounts.foreach(new Function2<JavaPairRDD<String, Integer>, Time, Void>() {
 
           //@Override
           public Void call(JavaPairRDD<String, Integer> values, Time time)

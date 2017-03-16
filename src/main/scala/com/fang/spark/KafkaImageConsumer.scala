@@ -36,7 +36,7 @@ object KafkaImageConsumer {
     ssc.sparkContext.setLogLevel("WARN")
     //连接HBase参数配置
     val hbaseConf = HBaseConfiguration.create()
-    val tableName = "imagesTest"
+    val tableName =SparkUtils.imageTableName
     hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
     hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
     hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")

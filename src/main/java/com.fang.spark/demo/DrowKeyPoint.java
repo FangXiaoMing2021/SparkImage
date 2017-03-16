@@ -12,19 +12,33 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.io.IOException;
 
 /**
  * Created by fang on 17-1-12.
  */
 public class DrowKeyPoint {
     private static final int IMAGE_WIDTH = 800;
-    public static void  main(String args[]){
+    public static void  main(String args[]) throws IOException {
         // Features SEARCH
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-        Mat image = Highgui.imread("/home/fang/images/11.jpg");
-        int detectorType = FeatureDetector.GFTT;
+        Mat image = Highgui.imread("/home/fang/images/train/1/n03272562_1751.JPEG");
+//        File imageFile =new File("/home/fang/images/train/3/n01751748_5705.JPEG");
+//        BufferedImage bi = ImageIO.read(imageFile);
+//        Mat image = new Mat(bi.getHeight(), bi.getWidth(), CvType.CV_8UC3);
+//        byte[] data = ((DataBufferByte)bi.getRaster().getDataBuffer()).getData();
+//        image.put(0, 0, data);
+
+//        MatOfByte matOfByte = new MatOfByte();
+//
+//        // encoding to png, so that your image does not lose information like with jpeg.
+//        Highgui.imencode(".png", mGray, matOfByte);
+//
+//        byte[] byteArray = matOfByte.toArray();
+
+        //int detectorType = FeatureDetector.GFTT;
         //int detectorType = FeatureDetector.HARRIS;
-        //int detectorType = FeatureDetector.SIFT;
+        int detectorType = FeatureDetector.SIFT;
 
         FeatureDetector detector = FeatureDetector.create(detectorType);
         Mat mask = new Mat();

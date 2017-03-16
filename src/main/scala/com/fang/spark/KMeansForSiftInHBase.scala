@@ -22,14 +22,14 @@ object KMeansForSiftInHBase extends App {
   val beginKMeans = System.currentTimeMillis()
   val sparkConf = new SparkConf()
     //.setMaster("spark://fang-ubuntu:7077")
-    //.setMaster("local[4]")
+    .setMaster("local[4]")
     .setAppName("KMeansForSiftInHBase")
     .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
   val sc = new SparkContext(sparkConf)
   sc.setLogLevel("WARN")
   val readSiftTime = System.currentTimeMillis()
   val hbaseConf = HBaseConfiguration.create()
-  val tableName = "imagesTest"
+  val tableName = SparkUtils.imageTableName
   hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
   hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
   hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
@@ -59,10 +59,12 @@ object KMeansForSiftInHBase extends App {
       (result._2.getRow, siftTwoDim)
   }
   //siftRDD.persist(StorageLevel.MEMORY_AND_DISK_SER_2)
-  val siftDenseRDD = siftRDD.flatMap(_._2).map(data => Vectors.dense(data.map(i => i.toDouble))).cache()
+  val siftDenseRDD = siftRDD.flatMap(_._2)
+    .map(data => Vectors.dense(data.map(i => i.toDouble)))
+    .persist(StorageLevel.MEMORY_AND_DISK)
   SparkUtils.printComputeTime(transformSift, "tranform sift")
   val kmeansTime = System.currentTimeMillis()
-  val numClusters = 4
+  val numClusters = 20
   val numIterations = 30
   val runTimes = 3
   var clusterIndex: Int = 0

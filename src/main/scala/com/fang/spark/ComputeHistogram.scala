@@ -27,7 +27,7 @@ object ComputeHistogram {
     sc.setLogLevel("WARN")
     val hbaseConf = HBaseConfiguration.create()
     //table name
-    val tableName = "imagesTest"
+    val tableName = SparkUtils.imageTableName
     hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
     hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
     hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")

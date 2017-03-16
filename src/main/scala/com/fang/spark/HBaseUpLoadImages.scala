@@ -42,7 +42,7 @@ object HBaseUpLoadImages {
         hbaseConfig.set("hbase.zookeeper.property.clientPort", "2181")
         hbaseConfig.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
         val connection: Connection = ConnectionFactory.createConnection(hbaseConfig);
-        val tableName = "imagesTest"
+        val tableName = SparkUtils.imageTableName
         val table: Table = connection.getTable(TableName.valueOf(tableName))
         SparkUtils.printComputeTime(begConnHBase, "connect hbase")
         //统计计算sift时间

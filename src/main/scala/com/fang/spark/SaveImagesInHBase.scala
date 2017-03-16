@@ -23,13 +23,16 @@ object SaveImagesInHBase {
   def main(args: Array[String]): Unit = {
     val sparkConf = new SparkConf()
       .setAppName("SaveImagesInHBase")
-      .setMaster("local[2]")
+      //.setMaster("local[2]")
     val sparkContext = new SparkContext(sparkConf)
     val hbaseConf = HBaseConfiguration.create()
+   // Caused by: java.lang.IllegalArgumentException: KeyValue size too large
+    //设置HBase中表字段最大大小
+    hbaseConf.set("hbase.client.keyvalue.maxsize","524288000");//最大500m
     hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
     hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
     val jobConf = new JobConf(hbaseConf, this.getClass)
-    jobConf.set(TableOutputFormat.OUTPUT_TABLE, "imagesTest")
+    jobConf.set(TableOutputFormat.OUTPUT_TABLE, SparkUtils.imageTableName)
     //设置job的输出格式
     jobConf.setOutputFormat(classOf[TableOutputFormat])
     val begUpload = System.currentTimeMillis()
@@ -48,7 +51,8 @@ object SaveImagesInHBase {
         val put: Put = new Put(Bytes.toBytes(imageName))
         put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), imageBinary)
         put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("path"), Bytes.toBytes(imageFile._1))
-        val sift = SparkUtils.getImageSift(imageBinary)
+
+        val sift = SparkUtils.getImageHARRIS(imageBinary)
         if (!sift.isEmpty) {
           put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
         }else{
