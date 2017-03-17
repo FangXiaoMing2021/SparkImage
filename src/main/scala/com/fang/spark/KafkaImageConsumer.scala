@@ -29,9 +29,9 @@ object KafkaImageConsumer {
   def main(args: Array[String]): Unit = {
     val sparkConf = new SparkConf()
       .setAppName("KafkaImageProcess")
-      //.setMaster("local[4]")
+      .setMaster("local[4]")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    val ssc = new StreamingContext(sparkConf, Milliseconds(500))
+    val ssc = new StreamingContext(sparkConf, Milliseconds(5000))
     ssc.checkpoint("checkpoint")
     ssc.sparkContext.setLogLevel("WARN")
     //连接HBase参数配置
@@ -79,7 +79,7 @@ object KafkaImageConsumer {
         //加载Opencv库,在每个分区都需加载
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
         val imageBytes = imageTuple._2
-        val sift = SparkUtils.getImageSift(imageBytes)
+        val sift = SparkUtils.getImageHARRIS(imageBytes)
         val histogramArray = new Array[Int](myKmeansModel.clusterCenters.length)
         if (!sift.isEmpty) {
           val siftByteArray = sift.get
@@ -104,33 +104,33 @@ object KafkaImageConsumer {
       * object not serializable (class: org.apache.hadoop.hbase.io.ImmutableBytesWritable
       * 调换foreachRDD 和map
       */
-//    imageTupleDStream.foreachRDD {
-//      rdd => {
-//        if (!rdd.isEmpty()) {
-//          val hConfig = HBaseConfiguration.create()
-//          val tableName = "imagesTest"
-//          hConfig.set("hbase.zookeeper.property.clientPort", "2181")
-//          hConfig.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
-//          val jobConf = new JobConf(hConfig)
-//          jobConf.setOutputFormat(classOf[TableOutputFormat])
-//          jobConf.set(TableOutputFormat.OUTPUT_TABLE, tableName)
-//          //保存从kafka接受的图片数据
-//          rdd.map {
-//            tuple => {
-//              val put: Put = new Put(Bytes.toBytes(tuple._1))
-//              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), tuple._2)
-//              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"), Utils.serializeObject(tuple._4))
-//              val sift = tuple._3
-//              if (!sift.isEmpty) {
-//                put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
-//              }
-//              (new ImmutableBytesWritable, put)
-//            }
-//          }.saveAsHadoopDataset(jobConf)
-//          println("================保存============")
-//        }
-//      }
-//    }
+    imageTupleDStream.foreachRDD {
+      rdd => {
+        if (!rdd.isEmpty()) {
+          val hConfig = HBaseConfiguration.create()
+          val tableName = "imagesTest"
+          hConfig.set("hbase.zookeeper.property.clientPort", "2181")
+          hConfig.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
+          val jobConf = new JobConf(hConfig)
+          jobConf.setOutputFormat(classOf[TableOutputFormat])
+          jobConf.set(TableOutputFormat.OUTPUT_TABLE, tableName)
+          //保存从kafka接受的图片数据
+          rdd.map {
+            tuple => {
+              val put: Put = new Put(Bytes.toBytes(tuple._1))
+              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), tuple._2)
+              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"), Utils.serializeObject(tuple._4))
+              val sift = tuple._3
+              if (!sift.isEmpty) {
+                put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
+              }
+              (new ImmutableBytesWritable, put)
+            }
+          }.saveAsHadoopDataset(jobConf)
+          println("================保存============")
+        }
+      }
+    }
 
     val histogramFromKafkaDStream = imageTupleDStream.map(tuple => (tuple._1, tuple._4))
 
@@ -189,17 +189,17 @@ object KafkaImageConsumer {
       }
     }
     //触发action,
-//    imageTupleDStream.foreachRDD {
-//      rdd => {
-//        rdd.foreach {
-//          imageTuple => {
-//            println("============================")
-//            println(imageTuple._1 )
-//            println("============================")
-//          }
-//        }
-//      }
-//    }
+    imageTupleDStream.foreachRDD {
+      rdd => {
+        rdd.foreach {
+          imageTuple => {
+            println("============================")
+            println(imageTuple._1 )
+            println("============================")
+          }
+        }
+      }
+    }
 
 
 

@@ -60,14 +60,15 @@ object KMeansForSiftInHBase extends App {
   }
   //siftRDD.persist(StorageLevel.MEMORY_AND_DISK_SER_2)
   val siftDenseRDD = siftRDD.flatMap(_._2)
-    .map(data => Vectors.dense(data.map(i => i.toDouble)))
-    .persist(StorageLevel.MEMORY_AND_DISK)
+    .map(data => Vectors.dense(data.map(i => i.toDouble))).cache()
+    //.persist(StorageLevel.MEMORY_AND_DISK)
   SparkUtils.printComputeTime(transformSift, "tranform sift")
   val kmeansTime = System.currentTimeMillis()
-  val numClusters = 20
-  val numIterations = 30
+  val numClusters = 100
+  val numIterations = 20
   val runTimes = 3
   var clusterIndex: Int = 0
+  // java.lang.IllegalArgumentException: Size exceeds Integer.MAX_VALUE
   val clusters: KMeansModel = KMeans.train(siftDenseRDD, numClusters, numIterations, runTimes)
   clusters.save(sc, SparkUtils.kmeansModelPath)
   SparkUtils.printComputeTime(kmeansTime, "kmeansTime")

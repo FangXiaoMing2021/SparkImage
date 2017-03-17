@@ -1,4 +1,4 @@
-package com.fang.spark.demo;
+package com.fang.spark;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;

@@ -25,7 +25,8 @@ object KafkaImageProducer {
     val producer = new KafkaProducer[String,Array[Byte]](props)
     val fileList = new File("/home/fang/imageTest").listFiles()
     println("图片总数为:"+fileList.length)
-    for(file<-fileList){
+    for(i<- 0 to fileList.length-1 ){
+      val file = fileList(i)
       val bi:BufferedImage= ImageIO.read(file)
       val out = new ByteArrayOutputStream
       val flag = ImageIO.write(bi, "jpg", out)

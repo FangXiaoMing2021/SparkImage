@@ -23,7 +23,7 @@ object SaveImagesInHBase {
   def main(args: Array[String]): Unit = {
     val sparkConf = new SparkConf()
       .setAppName("SaveImagesInHBase")
-      //.setMaster("local[2]")
+      .setMaster("local[2]")
     val sparkContext = new SparkContext(sparkConf)
     val hbaseConf = HBaseConfiguration.create()
    // Caused by: java.lang.IllegalArgumentException: KeyValue size too large

@@ -13,17 +13,17 @@ import sun.misc.{BASE64Decoder, BASE64Encoder}
   * Created by fang on 16-12-16.
   */
 object SparkUtils {
-  val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/*/*"
+  //val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/*/*"
   //val imagePath = "hdfs://218.199.92.225:9000/spark/n01491361"
-  //val imagePath = "/home/fang/images/train/1"
+  val imagePath = "/home/fang/images/train/2"
   // n02259212
   //hdfs dfs -rm -r /spark/kmeansModel
   val kmeansModelPath = "./spark/kmeansModel"
   private[spark] val encoder = new BASE64Encoder
   private[spark] val decoder = new BASE64Decoder
-  val imageTableName = "imageNetTable"
+  //val imageTableName = "imageNetTable"
 
-  //val imageTableName = "imagesTest"
+  val imageTableName = "imagesTest"
   //使用int，double都出错，改为float
   //将byte[]数组反序列化为float[]
   def deserializeMatArray(b: Array[Byte]): Array[Float] = {
