@@ -29,7 +29,7 @@ object KafkaImageConsumer {
   def main(args: Array[String]): Unit = {
     val sparkConf = new SparkConf()
       .setAppName("KafkaImageProcess")
-      .setMaster("local[4]")
+      //.setMaster("local[4]")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     val ssc = new StreamingContext(sparkConf, Milliseconds(5000))
     ssc.checkpoint("checkpoint")
@@ -59,6 +59,7 @@ object KafkaImageConsumer {
         (key, histogram)
       }
     }
+    //TODO
     histogramFromHBaseRDD.cache()
     //加载kmeans模型
     val myKmeansModel = KMeansModel.load(ssc.sparkContext, SparkUtils.kmeansModelPath)
@@ -79,7 +80,7 @@ object KafkaImageConsumer {
         //加载Opencv库,在每个分区都需加载
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
         val imageBytes = imageTuple._2
-        val sift = SparkUtils.getImageHARRIS(imageBytes)
+        val sift = SparkUtils.getImageSift(imageBytes)
         val histogramArray = new Array[Int](myKmeansModel.clusterCenters.length)
         if (!sift.isEmpty) {
           val siftByteArray = sift.get
@@ -94,7 +95,22 @@ object KafkaImageConsumer {
             histogramArray(predictedClusterIndex) = histogramArray(predictedClusterIndex) + 1
           }
         }
-        (imageTuple._1, imageBytes, sift, histogramArray)
+        //计算harris
+        val harris = SparkUtils.getImageHARRIS(imageBytes)
+        if (!harris.isEmpty) {
+          val harrisByteArray = sift.get
+          val harrisFloatArray = SparkUtils.byteArrToFloatArr(harrisByteArray)
+          val size = harrisFloatArray.length / 128
+          for (i <- 0 to size - 1) {
+            val xs: Array[Float] = new Array[Float](128)
+            for (j <- 0 to 127) {
+              xs(j) = harrisFloatArray(i * 128 + j)
+            }
+            val predictedClusterIndex: Int = myKmeansModel.predict(Vectors.dense(xs.map(i => i.toDouble)))
+            histogramArray(predictedClusterIndex) = histogramArray(predictedClusterIndex) + 1
+          }
+        }
+        (imageTuple._1, imageBytes,sift,harris, histogramArray)
       }
     }
 
@@ -119,10 +135,14 @@ object KafkaImageConsumer {
             tuple => {
               val put: Put = new Put(Bytes.toBytes(tuple._1))
               put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), tuple._2)
-              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"), Utils.serializeObject(tuple._4))
+              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"), Utils.serializeObject(tuple._5))
               val sift = tuple._3
               if (!sift.isEmpty) {
                 put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
+              }
+              val harris = tuple._4
+              if (!harris.isEmpty) {
+                put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"), sift.get)
               }
               (new ImmutableBytesWritable, put)
             }
@@ -132,7 +152,7 @@ object KafkaImageConsumer {
       }
     }
 
-    val histogramFromKafkaDStream = imageTupleDStream.map(tuple => (tuple._1, tuple._4))
+    val histogramFromKafkaDStream = imageTupleDStream.map(tuple => (tuple._1, tuple._5))
 
     val topNSimilarImageDStream = histogramFromKafkaDStream.transform {
       imageHistogramRDD => {

@@ -51,10 +51,17 @@ object SaveImagesInHBase {
         val put: Put = new Put(Bytes.toBytes(imageName))
         put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), imageBinary)
         put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("path"), Bytes.toBytes(imageFile._1))
-
-        val sift = SparkUtils.getImageHARRIS(imageBinary)
+        //提取sift特征
+        val sift = SparkUtils.getImageSift(imageBinary)
         if (!sift.isEmpty) {
           put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
+        }else{
+          println(imageName)
+        }
+        //提取HARRIS特征
+        val harris = SparkUtils.getImageHARRIS(imageBinary)
+        if (!harris.isEmpty) {
+          put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"), harris.get)
         }else{
           println(imageName)
         }
@@ -65,7 +72,8 @@ object SaveImagesInHBase {
     //保存时间
     val saveImageTime = System.currentTimeMillis()
     // imagesResult.saveAsNewAPIHadoopDataset(jobConf)
-    imagesResult.saveAsHadoopDataset(jobConf)
+    //imagesResult.saveAsHadoopDataset(jobConf)
+    imagesResult.count()
     SparkUtils.printComputeTime(saveImageTime, "save image time")
     sparkContext.stop()
   }

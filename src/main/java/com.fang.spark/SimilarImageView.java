@@ -33,7 +33,7 @@ import java.util.List;
 public class SimilarImageView extends JFrame implements ActionListener {
     private Configuration cfg = HBaseConfiguration.create();
     private int index = 0;
-    private Button nextButton = new Button("下一张");
+    private Button nextButton = new Button("Next Page");
     // private  JPanel buttonPanel = new JPanel();
     //private  JPanel imagePanel = new JPanel(new FlowLayout());
     private List<byte[]> similarImageByteList = new ArrayList<byte[]>();
@@ -67,7 +67,7 @@ public class SimilarImageView extends JFrame implements ActionListener {
         //从相似表中获取所有已经匹配的图像名称
         view.similarImageNameList = view.getSimilarTableRowKey(view.similarImageTable);
         //final Get g = new Get(Bytes.toBytes(key));
-        view.setTitle("相似图像" + "(1/" + view.similarImageNameList.size() + ")");
+        view.setTitle("Similar Images" + "(1/" + view.similarImageNameList.size() + ")");
         view.setLayout(new FlowLayout(FlowLayout.LEFT));
         view.setSize(FRAME_WIDTH, FRAME_HEIGHT);
         view.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -89,7 +89,7 @@ public class SimilarImageView extends JFrame implements ActionListener {
             view.similarImageByteList.clear();
             view.showNextImage(view.similarImageTable, view.imageTable, view.similarImageNameList.get(view.index));
             view.index = 1;
-            view.setTitle("相似图像" + "(" + view.index + "/" + view.similarImageNameList.size() + ")");
+            view.setTitle("SimilarImages" + "(" + view.index + "/" + view.similarImageNameList.size() + ")");
         } catch (IOException e1) {
             e1.printStackTrace();
         }
@@ -108,9 +108,9 @@ public class SimilarImageView extends JFrame implements ActionListener {
             this.showNextImage(similarImageTable, imageTable, similarImageNameList.get(this.index));
             this.index = (this.index + 1) % similarImageNameList.size();
             if (this.index == 0) {
-                this.setTitle("相似图像" + "(" + this.similarImageNameList.size() + "/" + this.similarImageNameList.size() + ")");
+                this.setTitle("Similar Images" + "(" + this.similarImageNameList.size() + "/" + this.similarImageNameList.size() + ")");
             } else {
-                this.setTitle("相似图像" + "(" + this.index + "/" + this.similarImageNameList.size() + ")");
+                this.setTitle("Similar Images" + "(" + this.index + "/" + this.similarImageNameList.size() + ")");
             }
         } catch (IOException e1) {
             e1.printStackTrace();
@@ -139,7 +139,8 @@ public class SimilarImageView extends JFrame implements ActionListener {
         List<String> similarImageDistance = new ArrayList<String>();
         //将原图放入
         similarImageGetList.add(g);
-        similarImageDistance.add("原图:" + (this.index + 1));
+        //similarImageDistance.add("Origin" + (this.index + 1));
+        similarImageDistance.add(""+this.index + 1);
         for (int i = FIRST_INDEX; i < NUMBER_OF_SIMILAR_IMAGE; i++) {
             byte[] similarImageByte = similarImageNameByteList.get(i);
             String imageName = Bytes.toString(similarImageByte);
@@ -147,10 +148,8 @@ public class SimilarImageView extends JFrame implements ActionListener {
             Get get = new Get(Bytes.toBytes(similarImageInfo[FIRST_INDEX]));
             //System.out.println(get);
             similarImageGetList.add(get);
-            similarImageDistance.add("SIFT距离:" + similarImageInfo[FIRST_INDEX + 1]);
+            similarImageDistance.add("SIFT Distance:" + similarImageInfo[FIRST_INDEX + 1]);
         }
-
-
         Result[] imageResult = imageTable.get(similarImageGetList);
 //        System.out.println(imageResult.length);
         //如果找不到图像,则抛出空指针异常
@@ -196,20 +195,6 @@ public class SimilarImageView extends JFrame implements ActionListener {
             lbl.setIcon(icon);
             lbl.setHorizontalAlignment(SwingConstants.CENTER);
         }
-//        for(byte[] similarImageByte:similarImageByteList){
-//            BufferedImage bi = ImageIO.read(new ByteArrayInputStream(similarImageByte));
-//            int height = (IMAGE_WIDTH*bi.getHeight())/bi.getWidth();
-//            ImageIcon icon=new ImageIcon(bi.getScaledInstance(IMAGE_WIDTH,height,Image.SCALE_SMOOTH));
-//            JLabel lbl=new JLabel();
-//            lbl.setHorizontalTextPosition(0);
-//            lbl.setForeground(Color.white);
-//            lbl.setText("image");
-//            lbl.setSize(120,160);
-//            lbl.setIcon(icon);
-//            frame.add(lbl);
-//        }
-//        frame.setVisible(true);
-//        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
     /**

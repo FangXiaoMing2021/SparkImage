@@ -19,7 +19,7 @@ object ComputeHistogram {
   def main(args: Array[String]): Unit = {
     val beginComputeHistogram = System.currentTimeMillis()
     val sparkConf = new SparkConf()
-      .setMaster("local[4]")
+      //.setMaster("local[4]")
       //.setMaster("spark://fang-ubuntu:7077")
       .setAppName("ComputeHistogram")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
@@ -33,6 +33,7 @@ object ComputeHistogram {
     hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
     val scan = new Scan()
     scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"))
+    scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
     val proto = ProtobufUtil.toScan(scan)
     val ScanToString = Base64.encodeBytes(proto.toByteArray())
     hbaseConf.set(TableInputFormat.SCAN, ScanToString)
@@ -40,40 +41,35 @@ object ComputeHistogram {
     val hbaseRDD = sc.newAPIHadoopRDD(hbaseConf, classOf[TableInputFormat],
       classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
       classOf[org.apache.hadoop.hbase.client.Result])
-    SparkUtils.printComputeTime(readSiftTime,"read sift")
+    SparkUtils.printComputeTime(readSiftTime, "read sift")
     val transformSift = System.currentTimeMillis()
-    val siftRDD = hbaseRDD.map{
-      result =>
+    val siftRDD = hbaseRDD.map {
+      result => {
         val siftByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("sift"))
-        val siftArray: Array[Float] = Utils.deserializeMat(siftByte)
-        val size = siftArray.length / 128
-        val siftTwoDim = new Array[Array[Float]](size)
-        for (i <- 0 to size - 1) {
-          val xs: Array[Float] = new Array[Float](128)
-          for (j <- 0 to 127) {
-            xs(j) = siftByte(i * 128 + j)
-          }
-          siftTwoDim(i) = xs
-        }
-        (result._2.getRow,siftTwoDim)
+        // val siftTwoDim = siftArr2TowDim(siftByte)
+        //(result._2.getRow, siftTwoDim)
+        val harrisByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("harris"))
+        val featureTwoDim = SparkUtils.featureArr2TowDim(siftByte, harrisByte)
+        (result._2.getRow, featureTwoDim)
+      }
     }
-    SparkUtils.printComputeTime(transformSift,"transform sift")
+    SparkUtils.printComputeTime(transformSift, "transform sift")
     val jobConf = new JobConf(hbaseConf)
     jobConf.setOutputFormat(classOf[TableOutputFormat])
     jobConf.set(TableOutputFormat.OUTPUT_TABLE, tableName)
     val loadKmeanModelTime = System.currentTimeMillis()
-    val myKmeansModel = KMeansModel.load(sc,SparkUtils.kmeansModelPath)
-    SparkUtils.printComputeTime(loadKmeanModelTime,"load kmeans mode")
+    val myKmeansModel = KMeansModel.load(sc, SparkUtils.kmeansModelPath)
+    SparkUtils.printComputeTime(loadKmeanModelTime, "load kmeans mode")
     val computeHistogram = System.currentTimeMillis()
     val histogramRDD = siftRDD.map {
       result => {
-        /**一个Put对象就是一行记录，在构造方法中指定主键
-         * 所有插入的数据必须用org.apache.hadoop.hbase.util.Bytes.toBytes方法转换
-         * Put.add方法接收三个参数：列族，列名，数据
-         */
+        /** 一个Put对象就是一行记录，在构造方法中指定主键
+          * 所有插入的数据必须用org.apache.hadoop.hbase.util.Bytes.toBytes方法转换
+          * Put.add方法接收三个参数：列族，列名，数据
+          */
         val histogramArray = new Array[Int](myKmeansModel.clusterCenters.length)
         for (i <- 0 to result._2.length - 1) {
-          val predictedClusterIndex: Int = myKmeansModel.predict(Vectors.dense(result._2(i).map(i=>i.toDouble)))
+          val predictedClusterIndex: Int = myKmeansModel.predict(Vectors.dense(result._2(i).map(i => i.toDouble)))
           histogramArray(predictedClusterIndex) = histogramArray(predictedClusterIndex) + 1
         }
         val put: Put = new Put(result._1)
@@ -81,10 +77,10 @@ object ComputeHistogram {
         (new ImmutableBytesWritable, put)
       }
     }
-    SparkUtils.printComputeTime(computeHistogram,"compute histogram")
+    SparkUtils.printComputeTime(computeHistogram, "compute histogram")
     val saveHistogram = System.currentTimeMillis()
     histogramRDD.saveAsHadoopDataset(jobConf)
-    SparkUtils.printComputeTime(saveHistogram,"save histogram")
-    SparkUtils.printComputeTime(beginComputeHistogram,"the compute histogram job")
+    SparkUtils.printComputeTime(saveHistogram, "save histogram")
+    SparkUtils.printComputeTime(beginComputeHistogram, "the compute histogram job")
   }
 }

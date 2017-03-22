@@ -22,7 +22,7 @@ public class DrowKeyPoint {
     public static void  main(String args[]) throws IOException {
         // Features SEARCH
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-        Mat image = Highgui.imread("/home/fang/images/train/1/n03272562_1751.JPEG");
+        Mat image = Highgui.imread("/home/fang/images/train/3/n01751748_7878.JPEG");
 //        File imageFile =new File("/home/fang/images/train/3/n01751748_5705.JPEG");
 //        BufferedImage bi = ImageIO.read(imageFile);
 //        Mat image = new Mat(bi.getHeight(), bi.getWidth(), CvType.CV_8UC3);

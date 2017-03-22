@@ -13,12 +13,13 @@ import sun.misc.{BASE64Decoder, BASE64Encoder}
   * Created by fang on 16-12-16.
   */
 object SparkUtils {
-  //val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/*/*"
+  //val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n01984695"
+  //n01491361  n01984695
   //val imagePath = "hdfs://218.199.92.225:9000/spark/n01491361"
-  val imagePath = "/home/fang/images/train/2"
+  val imagePath = "/home/hadoop/n01984695"
   // n02259212
   //hdfs dfs -rm -r /spark/kmeansModel
-  val kmeansModelPath = "./spark/kmeansModel"
+  val kmeansModelPath = "/spark/kmeansModel"
   private[spark] val encoder = new BASE64Encoder
   private[spark] val decoder = new BASE64Decoder
   //val imageTableName = "imageNetTable"
@@ -326,5 +327,57 @@ object SparkUtils {
 
     // now we can put it back into it's old place:
     threshRGBA.copyTo(roi);
+  }
+
+  /**
+    * 输入从HBase中读取的sift和harris特征值
+    * 将特征值转换为二维数组
+    * @param siftByte
+    * @param harrisByte
+    * @return
+    */
+  def featureArr2TowDim(siftByte:Array[Byte],harrisByte:Array[Byte]):Array[Array[Float]]={
+    val siftArray: Array[Float] = Utils.deserializeMat(siftByte)
+    val harrisArray: Array[Float] = Utils.deserializeMat(harrisByte)
+    val siftSize = siftArray.length / 128
+    val harrisSize = harrisArray.length / 128
+    val featureTwoDim = new Array[Array[Float]](siftSize+harrisSize)
+    //添加sift
+    for (i <- 0 to siftSize - 1) {
+      val xs: Array[Float] = new Array[Float](128)
+      for (j <- 0 to 127) {
+        xs(j) = siftByte(i * 128 + j)
+      }
+      featureTwoDim(i) = xs
+    }
+    //添加harris
+    for (i <- 0 to harrisSize - 1) {
+      val xs: Array[Float] = new Array[Float](128)
+      for (j <- 0 to 127) {
+        xs(j) = siftByte(i * 128 + j)
+      }
+      featureTwoDim(i+siftSize) = xs
+    }
+    featureTwoDim
+  }
+
+  /**
+    * 将HBase中的sift特征数组转换为二维数据
+    * @param siftByte
+    * @return
+    */
+  def siftArr2TowDim(siftByte: Array[Byte]): Array[Array[Float]] = {
+    //    val siftByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("sift"))
+    val siftArray: Array[Float] = Utils.deserializeMat(siftByte)
+    val size = siftArray.length / 128
+    val siftTwoDim = new Array[Array[Float]](size)
+    for (i <- 0 to size - 1) {
+      val xs: Array[Float] = new Array[Float](128)
+      for (j <- 0 to 127) {
+        xs(j) = siftByte(i * 128 + j)
+      }
+      siftTwoDim(i) = xs
+    }
+    siftTwoDim
   }
 }

@@ -155,3 +155,31 @@ object KMeansForSiftInHBase extends App {
   sc.stop()
   SparkUtils.printComputeTime(beginKMeans,"time for the job")
 }
+
+//  val computeHistogram = System.currentTimeMillis()
+//  hbaseConf.unset(TableInputFormat.INPUT_TABLE)
+//  val jobConf = new JobConf(hbaseConf)
+//  jobConf.setOutputFormat(classOf[TableOutputFormat])
+//  jobConf.set(TableOutputFormat.OUTPUT_TABLE, tableName)
+//  val histogramRDD = siftRDD.map {
+//    result => {
+//      /**一个Put对象就是一行记录，在构造方法中指定主键
+//       * 所有插入的数据必须用org.apache.hadoop.hbase.util.Bytes.toBytes方法转换
+//       * Put.add方法接收三个参数：列族，列名，数据
+//       */
+//      val myKmeansModel = KMeansModel.load(sc,"./kmeansModel")
+//      val histogramArray = new Array[Int](myKmeansModel.clusterCenters.length)
+//      //val siftArray: Array[Float] =result._2.map(i=>i.toDouble)
+//      for (i <- 0 to result._2.length - 1) {
+//        val predictedClusterIndex: Int = myKmeansModel.predict(Vectors.dense(result._2(i).map(i=>i.toDouble)))
+//        histogramArray(predictedClusterIndex) = histogramArray(predictedClusterIndex) + 1
+//      }
+//      val put: Put = new Put(result._1)
+//      put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"), Utils.serializeObject(histogramArray))
+//      (new ImmutableBytesWritable, put)
+//    }
+//  }
+//  SparkUtils.printComputeTime(computeHistogram,"compute images histogram")
+//  val saveHistogram = System.currentTimeMillis()
+//  histogramRDD.saveAsHadoopDataset(jobConf)
+//  SparkUtils.printComputeTime(saveHistogram,"save images histogram")
