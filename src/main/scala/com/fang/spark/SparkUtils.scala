@@ -13,13 +13,14 @@ import sun.misc.{BASE64Decoder, BASE64Encoder}
   * Created by fang on 16-12-16.
   */
 object SparkUtils {
-  //val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n01984695"
+  //val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n01491361"
   //n01491361  n01984695
   //val imagePath = "hdfs://218.199.92.225:9000/spark/n01491361"
-  val imagePath = "/home/hadoop/n01984695"
+  //val imagePath = "/home/hadoop/n01984695"
   // n02259212
   //hdfs dfs -rm -r /spark/kmeansModel
-  val kmeansModelPath = "/spark/kmeansModel"
+  val imagePath = "/home/fang/imageTest"
+  val kmeansModelPath = "/home/fang/kmeansModel"
   private[spark] val encoder = new BASE64Encoder
   private[spark] val decoder = new BASE64Decoder
   //val imageTableName = "imageNetTable"
@@ -206,7 +207,9 @@ object SparkUtils {
         test_mat.release()
         mkp.release()
         if (desc.rows() != 0) {
+         // println("************************Have One**************************************")
           Some(Utils.serializeMat(desc))
+
         } else {
           println("************************None**************************************")
           None
@@ -354,7 +357,7 @@ object SparkUtils {
     for (i <- 0 to harrisSize - 1) {
       val xs: Array[Float] = new Array[Float](128)
       for (j <- 0 to 127) {
-        xs(j) = siftByte(i * 128 + j)
+        xs(j) = harrisByte(i * 128 + j)
       }
       featureTwoDim(i+siftSize) = xs
     }
