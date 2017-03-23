@@ -1,7 +1,7 @@
 package com.fang.spark.bakeup
 
 import com.fang.spark.demo.ImageInputFormat
-import com.fang.spark.{SparkUtils, Utils}
+import com.fang.spark.{ImagesUtil, Utils}
 import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.util.Bytes
@@ -40,7 +40,7 @@ object UpLoadImages {
         val connection: Connection = ConnectionFactory.createConnection(hbaseConfig)
         val tableName = "imagesTest"
         val table: Table = connection.getTable(TableName.valueOf(tableName))
-        SparkUtils.printComputeTime(begConnHBase, "connect hbase")
+        ImagesUtil.printComputeTime(begConnHBase, "connect hbase")
         //统计计算sift时间
         val begComputeSift = System.currentTimeMillis()
         iter.foreach {
@@ -67,7 +67,7 @@ object UpLoadImages {
       }
     }
     sparkContext.stop()
-    SparkUtils.printComputeTime(beginUpload, "程序运行总时间")
+    ImagesUtil.printComputeTime(beginUpload, "程序运行总时间")
   }
 
 }

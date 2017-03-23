@@ -4,6 +4,11 @@ import java.awt.image.{BufferedImage, DataBufferByte}
 import java.io._
 import javax.imageio.ImageIO
 
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hbase.HBaseConfiguration
+import org.apache.hadoop.hbase.mapred.TableOutputFormat
+import org.apache.hadoop.mapred.JobConf
+import org.apache.spark.SparkConf
 import org.opencv.core._
 import org.opencv.features2d.{DescriptorExtractor, FeatureDetector}
 import org.opencv.imgproc.Imgproc
@@ -12,22 +17,44 @@ import sun.misc.{BASE64Decoder, BASE64Encoder}
 /**
   * Created by fang on 16-12-16.
   */
-object SparkUtils {
-  //val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n01491361"
+object ImagesUtil {
   //n01491361  n01984695
+  val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n01984695"
   //val imagePath = "hdfs://218.199.92.225:9000/spark/n01491361"
   //val imagePath = "/home/hadoop/n01984695"
-  // n02259212
   //hdfs dfs -rm -r /spark/kmeansModel
-  val imagePath = "/home/fang/imageTest"
+  //val imagePath = "/home/fang/imageTest"
   val kmeansModelPath = "/home/fang/kmeansModel"
   private[spark] val encoder = new BASE64Encoder
   private[spark] val decoder = new BASE64Decoder
   //val imageTableName = "imageNetTable"
-
   val imageTableName = "imagesTest"
-  //使用int，double都出错，改为float
-  //将byte[]数组反序列化为float[]
+
+
+  def loadHBaseConf(): Configuration ={
+    val hbaseConf = HBaseConfiguration.create()
+    // Caused by: java.lang.IllegalArgumentException: KeyValue size too large
+    //设置HBase中表字段最大大小
+    hbaseConf.set("hbase.client.keyvalue.maxsize","524288000");//最大500m
+    hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
+    hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
+    hbaseConf
+  }
+
+  def loadSparkConf(appName:String): SparkConf ={
+    val sparkConf = new SparkConf()
+      .setAppName(appName)
+      .setMaster("local[2]")
+      //.setMaster("spark://fang-ubuntu:7077")
+      .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+    sparkConf
+  }
+  /**
+    * 使用int，double都出错，改为float
+    * 将byte[]数组反序列化为float[]
+    * @param b
+    * @return
+    */
   def deserializeMatArray(b: Array[Byte]): Array[Float] = {
     try {
       val in = new ObjectInputStream(new ByteArrayInputStream(b))
@@ -47,9 +74,14 @@ object SparkUtils {
     }
   }
 
-  //java.lang.UnsupportedOperationException: Mat data type is not compatible: 0
-  //没有进行异常处理，出现上面错误，原因是没有提取到特征值，mat为空
-  //将Mat序列化为byte[]
+
+  /**
+    * java.lang.UnsupportedOperationException: Mat data type is not compatible: 0
+    * 没有进行异常处理，出现上面错误，原因是没有提取到特征值，mat为空
+    * 将Mat序列化为byte[]
+    * @param mat
+    * @return
+    */
   def serializeMat(mat: Mat): Array[Byte] = {
     val bos = new ByteArrayOutputStream
     try {
@@ -70,47 +102,23 @@ object SparkUtils {
     }
   }
 
+
+  /**
+    *
+    * @param beginTime
+    * @param message
+    */
   def printComputeTime(beginTime: Long, message: String) = {
     println("***************************************************************")
     println(message + " 耗时: " + (System.currentTimeMillis() - beginTime) + "ms")
     println("***************************************************************")
   }
 
-  def getImageToString(file: File): String = {
-    var imageString: String = ""
-    try {
-      val bi = ImageIO.read(file)
-      val baos = new ByteArrayOutputStream
-      ImageIO.write(bi, "jpg", baos)
-      val bytes = baos.toByteArray
-      imageString = encoder.encodeBuffer(bytes).trim
-    }
-    catch {
-      case e: IOException => {
-        e.printStackTrace()
-      }
-    }
-    imageString
-  }
-
-  def base64StringToImage(base64String: String, fileName: String) {
-    try {
-      val bytes1 = decoder.decodeBuffer(base64String)
-      val bais = new ByteArrayInputStream(bytes1)
-      val bi1 = ImageIO.read(bais)
-      //            bi1.flush();
-      //            bais.close();
-      val w2 = new File("/home/fang/images/" + fileName) //可以是jpg,png,gif格式
-      ImageIO.write(bi1, "jpg", w2) //不管输出什么格式图片，此处不需改动
-    }
-    catch {
-      case e: IOException => {
-        e.printStackTrace()
-      }
-    }
-  }
-
-  //获取图像的sift特征,返回Mat
+  /**
+    * 获取图像的sift特征,返回Mat
+    * @param image
+    * @return
+    */
   def getImageSiftOfMat(image: Array[Byte]): Mat = {
     val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(image))
     val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8U)
@@ -136,42 +144,39 @@ object SparkUtils {
   def getImageSift(image: Array[Byte]): Option[Array[Byte]] = {
     val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(image))
     //should be multiple of the Mat channels count
-    if (bi.getColorModel.getNumComponents == 3) {
-      val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8UC3)
-      val data = bi.getRaster.getDataBuffer.asInstanceOf[DataBufferByte].getData
-      test_mat.put(0, 0, data)
-      val desc = new Mat
-      val fd = FeatureDetector.create(FeatureDetector.SIFT)
-      /*
-        结合surf和harris
-       */
-      //val fd1 = FeatureDetector.create(FeatureDetector.SURF)
-      //val fd = FeatureDetector.create(FeatureDetector.HARRIS)
-      //OpenCV Error: Sizes of input arguments do not match
-      val mkp = new MatOfKeyPoint
-      fd.detect(test_mat, mkp)
-      val de = DescriptorExtractor.create(DescriptorExtractor.SIFT)
-      //val de1 = DescriptorExtractor.create(DescriptorExtractor.SURF)
-      //提取sift特征
-      de.compute(test_mat, mkp, desc)
-      test_mat.release()
-      mkp.release()
-      //    //判断是否有特征值
-      //    println("***************************************************************")
-      //    println(desc.rows())
-      //    println(desc.cols())
-      //    println("***************************************************************")
-      if (desc.rows() != 0) {
-        Some(Utils.serializeMat(desc))
-      } else {
-        println("************************None**************************************")
-        None
-      }
+    val numComponents = bi.getColorModel.getNumColorComponents
+    var test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8UC3)
+    if (numComponents == 3) {
+     test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8UC3)
+    } else if(numComponents==1){
+      test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8U)
+    }else{
+      return None
+    }
+    val data = bi.getRaster.getDataBuffer.asInstanceOf[DataBufferByte].getData
+    test_mat.put(0, 0, data)
+    val desc = new Mat
+    val fd = FeatureDetector.create(FeatureDetector.SIFT)
+    /*
+      结合surf和harris
+     */
+    //val fd1 = FeatureDetector.create(FeatureDetector.SURF)
+    //val fd = FeatureDetector.create(FeatureDetector.HARRIS)
+    //OpenCV Error: Sizes of input arguments do not match
+    val mkp = new MatOfKeyPoint
+    fd.detect(test_mat, mkp)
+    val de = DescriptorExtractor.create(DescriptorExtractor.SIFT)
+    //val de1 = DescriptorExtractor.create(DescriptorExtractor.SURF)
+    //提取sift特征
+    de.compute(test_mat, mkp, desc)
+    test_mat.release()
+    mkp.release()
+    if (desc.rows() != 0) {
+      Some(Utils.serializeMat(desc))
     } else {
-      println("bi.getColorModel.getNumComponents " + bi.getColorModel.getNumComponents);
+      println("**********************No Sift Feature****************************")
       None
     }
-
     //desc.push_back()
 
     //    val dstMat:Mat = desc.column(4);             //M为目的矩阵 3*4
@@ -192,30 +197,32 @@ object SparkUtils {
     try {
       val bi = ImageIO.read(new ByteArrayInputStream(image))
       //should be multiple of the Mat channels count
-      if (bi.getColorModel.getNumComponents == 3) {
-        val test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8UC3)
-        // java.lang.IllegalArgumentException:
-        // Numbers of source Raster bands and source color space components do not match
-        val data = bi.getRaster.getDataBuffer.asInstanceOf[DataBufferByte].getData
-        test_mat.put(0, 0, data)
-        val desc = new Mat
-        val fd = FeatureDetector.create(FeatureDetector.HARRIS)
-        val mkp = new MatOfKeyPoint
-        fd.detect(test_mat, mkp)
-        val de = DescriptorExtractor.create(DescriptorExtractor.SIFT)
-        de.compute(test_mat, mkp, desc)
-        test_mat.release()
-        mkp.release()
-        if (desc.rows() != 0) {
-         // println("************************Have One**************************************")
-          Some(Utils.serializeMat(desc))
-
-        } else {
-          println("************************None**************************************")
-          None
-        }
-      } else {
+      val numComponents = bi.getColorModel.getNumColorComponents
+      var test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8UC3)
+      if (numComponents == 3) {
+        test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8UC3)
+      } else if(numComponents==1){
+        test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8U)
+      }else{
         println("bi.getColorModel.getNumComponents " + bi.getColorModel.getNumComponents);
+        return None
+      }
+      // java.lang.IllegalArgumentException:
+      // Numbers of source Raster bands and source color space components do not match
+      val data = bi.getRaster.getDataBuffer.asInstanceOf[DataBufferByte].getData
+      test_mat.put(0, 0, data)
+      val desc = new Mat
+      val fd = FeatureDetector.create(FeatureDetector.HARRIS)
+      val mkp = new MatOfKeyPoint
+      fd.detect(test_mat, mkp)
+      val de = DescriptorExtractor.create(DescriptorExtractor.SIFT)
+      de.compute(test_mat, mkp, desc)
+      test_mat.release()
+      mkp.release()
+      if (desc.rows() != 0) {
+        Some(Utils.serializeMat(desc))
+      } else {
+        println("************************No Harris Feature*********************************")
         None
       }
 
@@ -232,6 +239,11 @@ object SparkUtils {
     }
   }
 
+  /**
+    *
+    * @param b
+    * @return
+    */
   def deserializeArray(b: Array[Byte]): Array[Int] = {
     var data = null.asInstanceOf[Array[Int]]
     try {
@@ -295,7 +307,11 @@ object SparkUtils {
     obj
   }
 
-  //使用int，double都出错，改为float
+  /**
+    * 使用int，double都出错，改为float
+    * @param b
+    * @return
+    */
   def byteArrToFloatArr(b: Array[Byte]): Array[Float] = {
     try {
       val in = new ObjectInputStream(new ByteArrayInputStream(b))
@@ -315,22 +331,7 @@ object SparkUtils {
     }
   }
 
-  def transformOneToRGBA(roi: Mat): Unit = {
 
-    val mBGR = new Mat();
-    Imgproc.cvtColor(roi, mBGR, Imgproc.COLOR_RGBA2BGR, 0);
-
-    val threshBin = new Mat();
-    Core.inRange(mBGR, new Scalar(0, 255, 255), new Scalar(0, 255, 255), threshBin);
-
-    // ok. now we got an 8bit binary img in threshBin,
-    // convert it to rbga:
-    val threshRGBA = new Mat();
-    Imgproc.cvtColor(threshBin, threshRGBA, Imgproc.COLOR_GRAY2RGBA);
-
-    // now we can put it back into it's old place:
-    threshRGBA.copyTo(roi);
-  }
 
   /**
     * 输入从HBase中读取的sift和harris特征值
@@ -383,4 +384,67 @@ object SparkUtils {
     }
     siftTwoDim
   }
+
+  /**
+    *
+    * @param roi
+    */
+  def transformOneToRGBA(roi: Mat): Unit = {
+    val mBGR = new Mat()
+    Imgproc.cvtColor(roi, mBGR, Imgproc.COLOR_RGBA2BGR, 0)
+    val threshBin = new Mat()
+    Core.inRange(mBGR, new Scalar(0, 255, 255), new Scalar(0, 255, 255), threshBin)
+
+    // ok. now we got an 8bit binary img in threshBin,
+    // convert it to rbga:
+    val threshRGBA = new Mat()
+    Imgproc.cvtColor(threshBin, threshRGBA, Imgproc.COLOR_GRAY2RGBA)
+    // now we can put it back into it's old place:
+    threshRGBA.copyTo(roi)
+  }
+
+  /**
+    *
+    * @param file
+    * @return
+    */
+  def getImageToString(file: File): String = {
+    var imageString: String = ""
+    try {
+      val bi = ImageIO.read(file)
+      val baos = new ByteArrayOutputStream
+      ImageIO.write(bi, "jpg", baos)
+      val bytes = baos.toByteArray
+      imageString = encoder.encodeBuffer(bytes).trim
+    }
+    catch {
+      case e: IOException => {
+        e.printStackTrace()
+      }
+    }
+    imageString
+  }
+
+  /**
+    *
+    * @param base64String
+    * @param fileName
+    */
+  def base64StringToImage(base64String: String, fileName: String) {
+    try {
+      val bytes1 = decoder.decodeBuffer(base64String)
+      val bais = new ByteArrayInputStream(bytes1)
+      val bi1 = ImageIO.read(bais)
+      //            bi1.flush();
+      //            bais.close();
+      val w2 = new File("/home/fang/images/" + fileName) //可以是jpg,png,gif格式
+      ImageIO.write(bi1, "jpg", w2) //不管输出什么格式图片，此处不需改动
+    }
+    catch {
+      case e: IOException => {
+        e.printStackTrace()
+      }
+    }
+  }
+
 }

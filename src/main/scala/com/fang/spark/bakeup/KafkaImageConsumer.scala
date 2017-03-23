@@ -1,6 +1,6 @@
 package com.fang.spark.bakeup
 
-import com.fang.spark.SparkUtils
+import com.fang.spark.ImagesUtil
 import kafka.serializer.{DefaultDecoder, StringDecoder}
 import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.client.Scan
@@ -45,14 +45,14 @@ object KafkaImageConsumer {
     val histogramMapRDD = histogramRDD.map {
       case (_, result) => {
         val key = Bytes.toString(result.getRow)
-        val histogram = SparkUtils.deserializeArray(result.getValue("image".getBytes, "histogram".getBytes))
+        val histogram = ImagesUtil.deserializeArray(result.getValue("image".getBytes, "histogram".getBytes))
         (key, histogram)
       }
     }
     histogramMapRDD.cache()
 
     //加载kmeans模型
-    val myKmeansModel = KMeansModel.load(ssc.sparkContext, SparkUtils.kmeansModelPath)
+    val myKmeansModel = KMeansModel.load(ssc.sparkContext, ImagesUtil.kmeansModelPath)
 
 
     val topics = Set("image_topic")
@@ -68,11 +68,11 @@ object KafkaImageConsumer {
         //加载Opencv库,在每个分区都需加载
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
         val imageBytes = imageTuple._2
-        val sift = SparkUtils.getImageSift(imageBytes)
+        val sift = ImagesUtil.getImageSift(imageBytes)
         val histogramArray = new Array[Int](myKmeansModel.clusterCenters.length)
         if (!sift.isEmpty) {
           val siftByteArray = sift.get
-          val siftFloatArray = SparkUtils.byteArrToFloatArr(siftByteArray)
+          val siftFloatArray = ImagesUtil.byteArrToFloatArr(siftByteArray)
           val size = siftFloatArray.length / 128
           for (i <- 0 to size - 1) {
             val xs: Array[Float] = new Array[Float](128)

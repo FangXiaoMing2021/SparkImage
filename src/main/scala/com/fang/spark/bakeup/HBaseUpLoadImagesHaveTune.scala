@@ -1,7 +1,7 @@
 package com.fang.spark.bakeup
 
 import com.fang.spark.demo.ImageInputFormat
-import com.fang.spark.{SparkUtils, Utils}
+import com.fang.spark.{ImagesUtil, Utils}
 import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.util.Bytes
@@ -32,7 +32,7 @@ object HBaseUpLoadImagesHaveTune {
     //统计获取本地数据文件的时间
     val begUpload = System.currentTimeMillis()
     val imagesRDD = sparkContext.newAPIHadoopFile[Text, Mat, ImageInputFormat]("file:///home/fang/images/train/2")
-    SparkUtils.printComputeTime(begUpload, "upload image")
+    ImagesUtil.printComputeTime(begUpload, "upload image")
     println(imagesRDD.getNumPartitions)
     System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
     //统计连接HBase数据库的时间
@@ -43,7 +43,7 @@ object HBaseUpLoadImagesHaveTune {
     val connection: Connection = ConnectionFactory.createConnection(hbaseConfig)
     val tableName = "imagesTest"
     val table: Table = connection.getTable(TableName.valueOf(tableName))
-    SparkUtils.printComputeTime(begConnHBase, "connect hbase")
+    ImagesUtil.printComputeTime(begConnHBase, "connect hbase")
     //统计计算sift时间
     val begComputeSift = System.currentTimeMillis()
     imagesRDD.foreach {
@@ -67,10 +67,10 @@ object HBaseUpLoadImagesHaveTune {
         table.put(put)
       }
     }
-    SparkUtils.printComputeTime(begComputeSift, "compute sift")
+    ImagesUtil.printComputeTime(begComputeSift, "compute sift")
     connection.close()
     sparkContext.stop()
-    SparkUtils.printComputeTime(beginUpload, "程序运行总时间")
+    ImagesUtil.printComputeTime(beginUpload, "程序运行总时间")
   }
 
 

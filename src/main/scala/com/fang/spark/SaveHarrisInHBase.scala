@@ -1,6 +1,6 @@
 package com.fang.spark
 
-import org.apache.hadoop.hbase.HBaseConfiguration
+
 import org.apache.hadoop.hbase.client.{Put, Scan}
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.hbase.mapred.TableOutputFormat
@@ -16,33 +16,34 @@ import org.opencv.core.Core
   */
 object SaveHarrisInHBase {
   def main(args: Array[String]): Unit = {
-    val sparkConf = new SparkConf()
-      .setMaster("local[4]")
-      //.setMaster("spark://fang-ubuntu:7077")
-      .setAppName("SaveHarrisInHBase")
-      .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+    val sparkConf = ImagesUtil.loadSparkConf("SaveHarrisInHBase")
+
     val sc = new SparkContext(sparkConf)
     sc.setLogLevel("WARN")
-    val hbaseConf = HBaseConfiguration.create()
     //table name
-    val tableName = SparkUtils.imageTableName
+    val tableName = ImagesUtil.imageTableName
+    val hbaseConf = ImagesUtil.loadHBaseConf()
     hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
-    hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
-    hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
+
     val scan = new Scan()
     scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"))
     val proto = ProtobufUtil.toScan(scan)
     val ScanToString = Base64.encodeBytes(proto.toByteArray())
     hbaseConf.set(TableInputFormat.SCAN, ScanToString)
+
     val readSiftTime = System.currentTimeMillis()
+
     val hbaseRDD = sc.newAPIHadoopRDD(hbaseConf, classOf[TableInputFormat],
       classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
       classOf[org.apache.hadoop.hbase.client.Result])
-    SparkUtils.printComputeTime(readSiftTime, "read image")
+
+    ImagesUtil.printComputeTime(readSiftTime, "read image")
     val transformHarris = System.currentTimeMillis()
+
     val jobConf = new JobConf(hbaseConf)
     jobConf.setOutputFormat(classOf[TableOutputFormat])
     jobConf.set(TableOutputFormat.OUTPUT_TABLE, tableName)
+
     val histogramRDD = hbaseRDD.map {
       result => {
         //提取HARRIS特征
@@ -51,23 +52,22 @@ object SaveHarrisInHBase {
         //Put中没值
         var tuple : (ImmutableBytesWritable, Put) =null
         val imageByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("binary"))
-        val harris = SparkUtils.getImageHARRIS(imageByte)
+        val harris = ImagesUtil.getImageHARRIS(imageByte)
         if (!harris.isEmpty) {
           val put: Put = new Put(result._2.getRow)
           put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"), harris.get)
           tuple=(new ImmutableBytesWritable, put)
         }else{
-          println(Bytes.toString(result._2.getRow))
+          println(Bytes.toString(result._2.getRow)+"no harris feature")
         }
        tuple
       }
     }.filter(_!=null)
-    println(histogramRDD.count())
 
-    SparkUtils.printComputeTime(transformHarris, "transformHarris")
+    ImagesUtil.printComputeTime(transformHarris, "transformHarris")
     val saveHarris = System.currentTimeMillis()
 
     histogramRDD.saveAsHadoopDataset(jobConf)
-    SparkUtils.printComputeTime(saveHarris, "save harris")
+    ImagesUtil.printComputeTime(saveHarris, "save harris")
   }
 }

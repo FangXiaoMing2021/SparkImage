@@ -23,24 +23,20 @@ import scala.util.control.Breaks._
 /**
   * Created by fang on 16-12-21.
   * 从Kafka获取图像数据,计算该图像的sift直方图,和HBase中的图像直方图对比,输出最相近的图像名
-  * 1488789541281
-  * 1488789554300
   */
 object KafkaImageConsumer {
   def main(args: Array[String]): Unit = {
-    val sparkConf = new SparkConf()
-      .setAppName("KafkaImageProcess")
-      .setMaster("local[4]")
-      .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    val ssc = new StreamingContext(sparkConf, Milliseconds(5000))
+    val sparkConf = ImagesUtil.loadSparkConf("KafkaImageProcess")
+
+    //批次间隔500ms
+    val ssc = new StreamingContext(sparkConf, Milliseconds(500))
     ssc.checkpoint("checkpoint")
     ssc.sparkContext.setLogLevel("WARN")
     //连接HBase参数配置
-    val hbaseConf = HBaseConfiguration.create()
-    val tableName =SparkUtils.imageTableName
+    val hbaseConf = ImagesUtil.loadHBaseConf()
+    val tableName =ImagesUtil.imageTableName
     hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
-    hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
-    hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
+
     val scan = new Scan()
     scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"))
     val proto = ProtobufUtil.toScan(scan)
@@ -53,17 +49,19 @@ object KafkaImageConsumer {
       classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
       classOf[org.apache.hadoop.hbase.client.Result])
 
+    //获取HBase中图像的特征直方图
     val histogramFromHBaseRDD = hBaseRDD.map {
       case (_, result) => {
         val key = Bytes.toString(result.getRow)
-        val histogram = SparkUtils.deserializeArray(result.getValue("image".getBytes, "histogram".getBytes))
+        val histogram = ImagesUtil.deserializeArray(result.getValue("image".getBytes, "histogram".getBytes))
         (key, histogram)
       }
     }
+    //缓存图像特征直方图库
     //TODO 解决内存不足的情况
     histogramFromHBaseRDD.cache()
     //加载kmeans模型
-    val myKmeansModel = KMeansModel.load(ssc.sparkContext, SparkUtils.kmeansModelPath)
+    val myKmeansModel = KMeansModel.load(ssc.sparkContext, ImagesUtil.kmeansModelPath)
 
     //从Kafka接收图像数据
     val topics = Set("image_topic")
@@ -81,19 +79,20 @@ object KafkaImageConsumer {
         getReceiveImageHistogram(imageTuple,myKmeansModel)
       }
     }
+
     //imageTupleDStream.cache()
-    //保存从kafka接受的图像
+    //保存从kafka接受的图像到HBase中
     imageTupleDStream.foreachRDD {
       rdd => {
         saveImagesFromKafka(rdd)
         }
     }
-
+    //获取接受图像的名称和特征直方图
     val histogramFromKafkaDStream = imageTupleDStream.map(tuple => (tuple._1, tuple._5))
 
+    //获取最相似的n张图片
     val topNSimilarImageDStream = histogramFromKafkaDStream.transform {
       imageHistogramRDD => {
-        //获取最相似的n张图片
         getNTopSimilarImage(imageHistogramRDD,histogramFromHBaseRDD)
       }
     }
@@ -158,11 +157,11 @@ object KafkaImageConsumer {
     //加载Opencv库,在每个分区都需加载
     System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
     val imageBytes = imageTuple._2
-    val sift = SparkUtils.getImageSift(imageBytes)
+    val sift = ImagesUtil.getImageSift(imageBytes)
     val histogramArray = new Array[Int](myKmeansModel.clusterCenters.length)
     if (!sift.isEmpty) {
       val siftByteArray = sift.get
-      val siftFloatArray = SparkUtils.byteArrToFloatArr(siftByteArray)
+      val siftFloatArray = ImagesUtil.byteArrToFloatArr(siftByteArray)
       val size = siftFloatArray.length / 128
       for (i <- 0 to size - 1) {
         val xs: Array[Float] = new Array[Float](128)
@@ -174,10 +173,10 @@ object KafkaImageConsumer {
       }
     }
     //计算harris
-    val harris = SparkUtils.getImageHARRIS(imageBytes)
+    val harris = ImagesUtil.getImageHARRIS(imageBytes)
     if (!harris.isEmpty) {
       val harrisByteArray = sift.get
-      val harrisFloatArray = SparkUtils.byteArrToFloatArr(harrisByteArray)
+      val harrisFloatArray = ImagesUtil.byteArrToFloatArr(harrisByteArray)
       val size = harrisFloatArray.length / 128
       for (i <- 0 to size - 1) {
         val xs: Array[Float] = new Array[Float](128)

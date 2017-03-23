@@ -5,7 +5,7 @@ package com.fang.spark.bakeup
   * 对存储在HBase中的image表中的数据进行KMeans聚类，并保存训练完成的模型
   */
 
-import com.fang.spark.{SparkUtils, Utils}
+import com.fang.spark.{ImagesUtil, Utils}
 import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
@@ -41,7 +41,7 @@ object KMeansForSiftInHBase extends App {
   val hbaseRDD = sc.newAPIHadoopRDD(hbaseConf, classOf[TableInputFormat],
     classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
     classOf[org.apache.hadoop.hbase.client.Result])
-  SparkUtils.printComputeTime(readSiftTime,"readSiftTime")
+  ImagesUtil.printComputeTime(readSiftTime,"readSiftTime")
  /* val siftRDD = hbaseRDD.map(x => x._2)
     .flatMap {
       result =>
@@ -79,7 +79,7 @@ object KMeansForSiftInHBase extends App {
    }
   siftRDD.persist(StorageLevel.MEMORY_AND_DISK_SER_2)
   val siftDenseRDD = siftRDD.flatMap(_._2).map(data => Vectors.dense(data.map(i => i.toDouble)))
-  SparkUtils.printComputeTime(transformSift,"tranform sift")
+  ImagesUtil.printComputeTime(transformSift,"tranform sift")
   val kmeansTime = System.currentTimeMillis()
   val numClusters = 4
   val numIterations = 30
@@ -87,7 +87,7 @@ object KMeansForSiftInHBase extends App {
   var clusterIndex: Int = 0
   val clusters: KMeansModel = KMeans.train(siftDenseRDD, numClusters, numIterations, runTimes)
   clusters.save(sc,"./kmeansModel")
-  SparkUtils.printComputeTime(kmeansTime,"kmeansTime")
+  ImagesUtil.printComputeTime(kmeansTime,"kmeansTime")
   //  println("Cluster Number:" + clusters.clusterCenters.length)
   //  println("Cluster Centers Information Overview:")
   //clusters.save(sc, "src/main/resources/KMeansModel")
@@ -122,10 +122,10 @@ object KMeansForSiftInHBase extends App {
       (new ImmutableBytesWritable, put)
     }
   }
-  SparkUtils.printComputeTime(computeHistogram,"compute images histogram")
+  ImagesUtil.printComputeTime(computeHistogram,"compute images histogram")
   val saveHistogram = System.currentTimeMillis()
   histogramRDD.saveAsHadoopDataset(jobConf)
-  SparkUtils.printComputeTime(saveHistogram,"save images histogram")
+  ImagesUtil.printComputeTime(saveHistogram,"save images histogram")
   /*val histogramRDD = hbaseRDD.foreachPartition {
     iter => {
       // val hbaseConfig = HBaseConfiguration.create()
@@ -153,7 +153,7 @@ object KMeansForSiftInHBase extends App {
     }
   }*/
   sc.stop()
-  SparkUtils.printComputeTime(beginKMeans,"time for the job")
+  ImagesUtil.printComputeTime(beginKMeans,"time for the job")
 }
 
 //  val computeHistogram = System.currentTimeMillis()

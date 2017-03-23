@@ -4,7 +4,7 @@ import java.awt.image.{BufferedImage, DataBufferByte}
 import java.io.ByteArrayInputStream
 import javax.imageio.ImageIO
 
-import com.fang.spark.{SparkUtils, Utils}
+import com.fang.spark.{ImagesUtil, Utils}
 import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.util.Bytes
@@ -39,7 +39,7 @@ object HBaseUpLoadImages {
     //统计获取本地数据文件的时间
     val begUpload = System.currentTimeMillis()
     val imagesRDD = sparkContext.binaryFiles("file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n02113799")
-    SparkUtils.printComputeTime(begUpload,"upload")
+    ImagesUtil.printComputeTime(begUpload,"upload")
     // val imagesRDD = sparkContext.newAPIHadoopFile[Text, BufferedImage, ImmutableBytesWritable]("/home/fang/images/train/1")
     // val columnFaminlys :Array[String] = Array("image")
     //createTable(tableName,columnFaminlys,connection)
@@ -55,7 +55,7 @@ object HBaseUpLoadImages {
         val connection: Connection = ConnectionFactory.createConnection(hbaseConfig);
         val tableName = "imagesTest"
         val table: Table = connection.getTable(TableName.valueOf(tableName))
-        SparkUtils.printComputeTime(begConnHBase,"connect hbase")
+        ImagesUtil.printComputeTime(begConnHBase,"connect hbase")
         iter.foreach {
           imageFile => {
             //val bi: BufferedImage = ImageIO.read(new ByteArrayInputStream(imageFile._2.toArray()))
@@ -71,7 +71,7 @@ object HBaseUpLoadImages {
             //统计计算sift时间
             val begComputeSift = System.currentTimeMillis()
             val sift = getImageSift(imageBinary)
-            SparkUtils.printComputeTime(begComputeSift,"compute sift")
+            ImagesUtil.printComputeTime(begComputeSift,"compute sift")
             if(!sift.isEmpty) {
               put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"),sift.get)
             }

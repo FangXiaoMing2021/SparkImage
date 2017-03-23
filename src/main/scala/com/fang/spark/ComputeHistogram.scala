@@ -18,19 +18,15 @@ import org.apache.spark.mllib.linalg.Vectors
 object ComputeHistogram {
   def main(args: Array[String]): Unit = {
     val beginComputeHistogram = System.currentTimeMillis()
-    val sparkConf = new SparkConf()
-      .setMaster("local[4]")
-      //.setMaster("spark://fang-ubuntu:7077")
-      .setAppName("ComputeHistogram")
-      .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+    val sparkConf = ImagesUtil.loadSparkConf("ComputeHistogram")
+
     val sc = new SparkContext(sparkConf)
     sc.setLogLevel("WARN")
-    val hbaseConf = HBaseConfiguration.create()
+    val hbaseConf =ImagesUtil.loadHBaseConf()
     //table name
-    val tableName = SparkUtils.imageTableName
+    val tableName = ImagesUtil.imageTableName
     hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
-    hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
-    hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
+
     val scan = new Scan()
     scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"))
     scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
@@ -41,7 +37,7 @@ object ComputeHistogram {
     val hbaseRDD = sc.newAPIHadoopRDD(hbaseConf, classOf[TableInputFormat],
       classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
       classOf[org.apache.hadoop.hbase.client.Result])
-    SparkUtils.printComputeTime(readSiftTime, "read sift")
+    ImagesUtil.printComputeTime(readSiftTime, "read sift")
     val transformSift = System.currentTimeMillis()
     val siftRDD = hbaseRDD.map {
       result => {
@@ -49,17 +45,17 @@ object ComputeHistogram {
         // val siftTwoDim = siftArr2TowDim(siftByte)
         //(result._2.getRow, siftTwoDim)
         val harrisByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("harris"))
-        val featureTwoDim = SparkUtils.featureArr2TowDim(siftByte, harrisByte)
+        val featureTwoDim = ImagesUtil.featureArr2TowDim(siftByte, harrisByte)
         (result._2.getRow, featureTwoDim)
       }
     }
-    SparkUtils.printComputeTime(transformSift, "transform sift")
+    ImagesUtil.printComputeTime(transformSift, "transform sift")
     val jobConf = new JobConf(hbaseConf)
     jobConf.setOutputFormat(classOf[TableOutputFormat])
     jobConf.set(TableOutputFormat.OUTPUT_TABLE, tableName)
     val loadKmeanModelTime = System.currentTimeMillis()
-    val myKmeansModel = KMeansModel.load(sc, SparkUtils.kmeansModelPath)
-    SparkUtils.printComputeTime(loadKmeanModelTime, "load kmeans mode")
+    val myKmeansModel = KMeansModel.load(sc, ImagesUtil.kmeansModelPath)
+    ImagesUtil.printComputeTime(loadKmeanModelTime, "load kmeans mode")
     val computeHistogram = System.currentTimeMillis()
     val histogramRDD = siftRDD.map {
       result => {
@@ -77,10 +73,10 @@ object ComputeHistogram {
         (new ImmutableBytesWritable, put)
       }
     }
-    SparkUtils.printComputeTime(computeHistogram, "compute histogram")
+    ImagesUtil.printComputeTime(computeHistogram, "compute histogram")
     val saveHistogram = System.currentTimeMillis()
     histogramRDD.saveAsHadoopDataset(jobConf)
-    SparkUtils.printComputeTime(saveHistogram, "save histogram")
-    SparkUtils.printComputeTime(beginComputeHistogram, "the compute histogram job")
+    ImagesUtil.printComputeTime(saveHistogram, "save histogram")
+    ImagesUtil.printComputeTime(beginComputeHistogram, "the compute histogram job")
   }
 }

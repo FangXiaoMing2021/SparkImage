@@ -29,8 +29,8 @@ object HBaseUpLoadImages {
     sparkContext.setLogLevel("WARN")
     //统计获取本地数据文件的时间
     val begUpload = System.currentTimeMillis()
-    val imagesRDD = sparkContext.binaryFiles(SparkUtils.imagePath)
-    SparkUtils.printComputeTime(begUpload, "upload image")
+    val imagesRDD = sparkContext.binaryFiles(ImagesUtil.imagePath)
+    ImagesUtil.printComputeTime(begUpload, "upload image")
     println("num of partition " + imagesRDD.getNumPartitions)
     imagesRDD.foreachPartition {
       iter => {
@@ -42,9 +42,9 @@ object HBaseUpLoadImages {
         hbaseConfig.set("hbase.zookeeper.property.clientPort", "2181")
         hbaseConfig.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
         val connection: Connection = ConnectionFactory.createConnection(hbaseConfig);
-        val tableName = SparkUtils.imageTableName
+        val tableName = ImagesUtil.imageTableName
         val table: Table = connection.getTable(TableName.valueOf(tableName))
-        SparkUtils.printComputeTime(begConnHBase, "connect hbase")
+        ImagesUtil.printComputeTime(begConnHBase, "connect hbase")
         //统计计算sift时间
         val begComputeSift = System.currentTimeMillis()
         val host = InetAddress.getLocalHost()
@@ -59,19 +59,19 @@ object HBaseUpLoadImages {
             put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), imageBinary)
             put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("path"), Bytes.toBytes(imageFile._1))
             put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("hostname"), Bytes.toBytes(host.getHostAddress + host.getHostName))
-            val sift = SparkUtils.getImageSift(imageBinary)
+            val sift = ImagesUtil.getImageSift(imageBinary)
             if (!sift.isEmpty) {
               put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
             }
             table.put(put)
           }
         }
-        SparkUtils.printComputeTime(begComputeSift, "compute sift")
+        ImagesUtil.printComputeTime(begComputeSift, "compute sift")
         connection.close()
       }
     }
     sparkContext.stop()
-    SparkUtils.printComputeTime(beginUpload, "程序运行总时间")
+    ImagesUtil.printComputeTime(beginUpload, "程序运行总时间")
   }
 
 }

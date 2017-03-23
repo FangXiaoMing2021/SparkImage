@@ -20,19 +20,15 @@ import org.apache.spark.{SparkConf, SparkContext}
 
 object KMeansForSiftInHBase extends App {
   val beginKMeans = System.currentTimeMillis()
-  val sparkConf = new SparkConf()
-    //.setMaster("spark://fang-ubuntu:7077")
-    .setMaster("local[4]")
-    .setAppName("KMeansForSiftInHBase")
-    .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+  val sparkConf = ImagesUtil.loadSparkConf("KMeansForSiftInHBase")
+
   val sc = new SparkContext(sparkConf)
   sc.setLogLevel("WARN")
   val readSiftTime = System.currentTimeMillis()
-  val hbaseConf = HBaseConfiguration.create()
-  val tableName = SparkUtils.imageTableName
+  val hbaseConf = ImagesUtil.loadHBaseConf()
+  val tableName = ImagesUtil.imageTableName
   hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
-  hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
-  hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
+
   val scan = new Scan()
   scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"))
   //添加harris
@@ -43,20 +39,25 @@ object KMeansForSiftInHBase extends App {
   val hbaseRDD = sc.newAPIHadoopRDD(hbaseConf, classOf[TableInputFormat],
     classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
     classOf[org.apache.hadoop.hbase.client.Result])
-  SparkUtils.printComputeTime(readSiftTime, "readSiftTime")
+  ImagesUtil.printComputeTime(readSiftTime, "readSiftTime")
   val transformSift = System.currentTimeMillis()
   val siftRDD = hbaseRDD.map {
     result =>
       val siftByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("sift"))
       val harrisByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("harris"))
-      val featureTwoDim = SparkUtils.featureArr2TowDim(siftByte,harrisByte)
-      (result._2.getRow, featureTwoDim)
-  }
+      //空指针异常
+      if(siftByte!=null&&harrisByte!=null){
+        val featureTwoDim = ImagesUtil.featureArr2TowDim(siftByte,harrisByte)
+        (result._2.getRow, featureTwoDim)
+      }else{
+        null
+      }
+  }.filter(_!=null)
   //siftRDD.persist(StorageLevel.MEMORY_AND_DISK_SER_2)
   val siftDenseRDD = siftRDD.flatMap(_._2)
     .map(data => Vectors.dense(data.map(i => i.toDouble))).cache()
     //.persist(StorageLevel.MEMORY_AND_DISK)
-  SparkUtils.printComputeTime(transformSift, "tranform sift")
+  ImagesUtil.printComputeTime(transformSift, "tranform sift")
   val kmeansTime = System.currentTimeMillis()
   val numClusters = 100
   val numIterations = 30
@@ -64,10 +65,10 @@ object KMeansForSiftInHBase extends App {
   var clusterIndex: Int = 0
   // java.lang.IllegalArgumentException: Size exceeds Integer.MAX_VALUE
   val clusters: KMeansModel = KMeans.train(siftDenseRDD, numClusters, numIterations, runTimes)
-  clusters.save(sc, SparkUtils.kmeansModelPath)
-  SparkUtils.printComputeTime(kmeansTime, "kmeansTime")
+  clusters.save(sc, ImagesUtil.kmeansModelPath)
+  ImagesUtil.printComputeTime(kmeansTime, "kmeansTime")
   sc.stop()
-  SparkUtils.printComputeTime(beginKMeans, "time for the job")
+  ImagesUtil.printComputeTime(beginKMeans, "time for the job")
 
 }
 

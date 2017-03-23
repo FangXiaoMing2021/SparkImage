@@ -21,25 +21,25 @@ import org.opencv.core.Core
   */
 object SaveImagesInHBase {
   def main(args: Array[String]): Unit = {
-    val sparkConf = new SparkConf()
-      .setAppName("SaveImagesInHBase")
-      .setMaster("local[2]")
+
+    val sparkConf = ImagesUtil.loadSparkConf("SaveImagesInHBase")
+
     val sparkContext = new SparkContext(sparkConf)
-    val hbaseConf = HBaseConfiguration.create()
-   // Caused by: java.lang.IllegalArgumentException: KeyValue size too large
-    //设置HBase中表字段最大大小
-    hbaseConf.set("hbase.client.keyvalue.maxsize","524288000");//最大500m
-    hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
-    hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
+    //加载HBase配置
+    val hbaseConf = ImagesUtil.loadHBaseConf()
     val jobConf = new JobConf(hbaseConf, this.getClass)
-    jobConf.set(TableOutputFormat.OUTPUT_TABLE, SparkUtils.imageTableName)
+    jobConf.set(TableOutputFormat.OUTPUT_TABLE, ImagesUtil.imageTableName)
     //设置job的输出格式
     jobConf.setOutputFormat(classOf[TableOutputFormat])
     val begUpload = System.currentTimeMillis()
-    val imagesRDD = sparkContext.binaryFiles(SparkUtils.imagePath)
-    SparkUtils.printComputeTime(begUpload, "upload image")
+    val imagesRDD = sparkContext.binaryFiles(ImagesUtil.imagePath)
+    ImagesUtil.printComputeTime(begUpload, "upload image")
     //统计计算sift时间
     val begComputeSift = System.currentTimeMillis()
+//    imagesRDD.foreachPartition{
+//      _=>
+//        System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
+//    }
     val imagesResult = imagesRDD.map {
       imageFile => {
         //加载Opencv库,在每个分区都需加载
@@ -52,11 +52,11 @@ object SaveImagesInHBase {
         put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), imageBinary)
         put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("path"), Bytes.toBytes(imageFile._1))
         //提取sift特征
-        val sift = SparkUtils.getImageSift(imageBinary)
+        val sift = ImagesUtil.getImageSift(imageBinary)
         if (!sift.isEmpty) {
           put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
         }else{
-          println(imageName)
+          println(imageName+"no sift feature")
         }
 //        //提取HARRIS特征
 //        val harris = SparkUtils.getImageHARRIS(imageBinary)
@@ -68,13 +68,13 @@ object SaveImagesInHBase {
         (new ImmutableBytesWritable, put)
       }
     }
-    SparkUtils.printComputeTime(begComputeSift, "compute sift")
+    ImagesUtil.printComputeTime(begComputeSift, "compute sift")
     //保存时间
     val saveImageTime = System.currentTimeMillis()
     // imagesResult.saveAsNewAPIHadoopDataset(jobConf)
     imagesResult.saveAsHadoopDataset(jobConf)
     //imagesResult.count()
-    SparkUtils.printComputeTime(saveImageTime, "save image time")
+    ImagesUtil.printComputeTime(saveImageTime, "save image time")
     sparkContext.stop()
   }
 

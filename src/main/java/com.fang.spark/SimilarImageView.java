@@ -42,7 +42,7 @@ public class SimilarImageView extends JFrame implements ActionListener {
     private Table imageTable;
     private Table similarImageTable;
     private static final int NUMBER_OF_SIMILAR_IMAGE = 10;
-    private static final String IMAGE_TABLE = SparkUtils.imageTableName();
+    private static final String IMAGE_TABLE = ImagesUtil.imageTableName();
     private static final String SIMILAR_IMAGE_TABLE = "similarImageTable";
     private static final int FIRST_INDEX = 0;
     private static final int IMAGE_WIDTH = 120;
