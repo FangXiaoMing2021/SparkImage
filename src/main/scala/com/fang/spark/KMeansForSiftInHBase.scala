@@ -5,18 +5,13 @@ package com.fang.spark
   * 对存储在HBase中的image表中的数据进行KMeans聚类，并保存训练完成的模型
   */
 
-import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import org.apache.hadoop.hbase.client._
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable
-import org.apache.hadoop.hbase.mapred.TableOutputFormat
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil
 import org.apache.hadoop.hbase.util.{Base64, Bytes}
-import org.apache.hadoop.mapred.JobConf
+import org.apache.spark.SparkContext
 import org.apache.spark.mllib.clustering.{KMeans, KMeansModel}
 import org.apache.spark.mllib.linalg.Vectors
-import org.apache.spark.storage.StorageLevel
-import org.apache.spark.{SparkConf, SparkContext}
 
 object KMeansForSiftInHBase extends App {
   val beginKMeans = System.currentTimeMillis()
@@ -32,7 +27,7 @@ object KMeansForSiftInHBase extends App {
   val scan = new Scan()
   scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"))
   //添加harris
-  scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
+  //scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
   val proto = ProtobufUtil.toScan(scan)
   val ScanToString = Base64.encodeBytes(proto.toByteArray())
   hbaseConf.set(TableInputFormat.SCAN, ScanToString)
@@ -44,10 +39,10 @@ object KMeansForSiftInHBase extends App {
   val siftRDD = hbaseRDD.map {
     result =>
       val siftByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("sift"))
-      val harrisByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("harris"))
+      //val harrisByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("harris"))
       //空指针异常
-      if(siftByte!=null&&harrisByte!=null){
-        val featureTwoDim = ImagesUtil.featureArr2TowDim(siftByte,harrisByte)
+      if(siftByte!=null){
+        val featureTwoDim = ImagesUtil.siftArr2TowDim(siftByte)
         (result._2.getRow, featureTwoDim)
       }else{
         null

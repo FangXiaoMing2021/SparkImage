@@ -88,7 +88,7 @@ object KafkaImageConsumer {
         }
     }
     //获取接受图像的名称和特征直方图
-    val histogramFromKafkaDStream = imageTupleDStream.map(tuple => (tuple._1, tuple._5))
+    val histogramFromKafkaDStream = imageTupleDStream.map(tuple => (tuple._1, tuple._4))
 
     //获取最相似的n张图片
     val topNSimilarImageDStream = histogramFromKafkaDStream.transform {
@@ -116,7 +116,7 @@ object KafkaImageConsumer {
     * @param rdd
     */
   def saveImagesFromKafka
-  (rdd:RDD[(String, Array[Byte], Option[Array[Byte]], Option[Array[Byte]], Array[Int])]){
+  (rdd:RDD[(String, Array[Byte], Option[Array[Byte]], Array[Int])]){
     if (!rdd.isEmpty()) {
       val hConfig = HBaseConfiguration.create()
       val tableName = "imagesTest"
@@ -130,19 +130,20 @@ object KafkaImageConsumer {
         tuple => {
           val put: Put = new Put(Bytes.toBytes(tuple._1))
           put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), tuple._2)
-          put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"), Utils.serializeObject(tuple._5))
+          //TODO 改了序列化
+          put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"), ImagesUtil.ObjectToBytes(tuple._4))
           val sift = tuple._3
           if (!sift.isEmpty) {
             put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
           }
-          val harris = tuple._4
-          if (!harris.isEmpty) {
-            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"), sift.get)
-          }
+//          val harris = tuple._4
+//          if (!harris.isEmpty) {
+//            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"), sift.get)
+//          }
           (new ImmutableBytesWritable, put)
         }
       }.saveAsHadoopDataset(jobConf)
-      println("================保存============")
+      println("================保存完成==================")
     }
   }
 
@@ -153,7 +154,7 @@ object KafkaImageConsumer {
     * @return
     */
   def getReceiveImageHistogram(imageTuple:(String,Array[Byte]),myKmeansModel:KMeansModel)
-  :(String, Array[Byte], Option[Array[Byte]], Option[Array[Byte]], Array[Int]) ={
+  :(String, Array[Byte], Option[Array[Byte]], Array[Int]) ={
     //加载Opencv库,在每个分区都需加载
     System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
     val imageBytes = imageTuple._2
@@ -173,21 +174,21 @@ object KafkaImageConsumer {
       }
     }
     //计算harris
-    val harris = ImagesUtil.getImageHARRIS(imageBytes)
-    if (!harris.isEmpty) {
-      val harrisByteArray = sift.get
-      val harrisFloatArray = ImagesUtil.byteArrToFloatArr(harrisByteArray)
-      val size = harrisFloatArray.length / 128
-      for (i <- 0 to size - 1) {
-        val xs: Array[Float] = new Array[Float](128)
-        for (j <- 0 to 127) {
-          xs(j) = harrisFloatArray(i * 128 + j)
-        }
-        val predictedClusterIndex: Int = myKmeansModel.predict(Vectors.dense(xs.map(i => i.toDouble)))
-        histogramArray(predictedClusterIndex) = histogramArray(predictedClusterIndex) + 1
-      }
-    }
-   (imageTuple._1, imageBytes,sift,harris, histogramArray)
+ //   val harris = ImagesUtil.getImageHARRIS(imageBytes)
+//    if (!harris.isEmpty) {
+//      val harrisByteArray = sift.get
+//      val harrisFloatArray = ImagesUtil.byteArrToFloatArr(harrisByteArray)
+//      val size = harrisFloatArray.length / 128
+//      for (i <- 0 to size - 1) {
+//        val xs: Array[Float] = new Array[Float](128)
+//        for (j <- 0 to 127) {
+//          xs(j) = harrisFloatArray(i * 128 + j)
+//        }
+//        val predictedClusterIndex: Int = myKmeansModel.predict(Vectors.dense(xs.map(i => i.toDouble)))
+//        histogramArray(predictedClusterIndex) = histogramArray(predictedClusterIndex) + 1
+//      }
+//    }
+   (imageTuple._1, imageBytes,sift, histogramArray)
   }
 
   /**
@@ -281,6 +282,8 @@ object KafkaImageConsumer {
       //       println("=======================保存相似图像=======================")
       //          val saveSimilarTime = System.currentTimeMillis()
       //          println("获得相似图像的时间"+saveSimilarTime)
+      //TODO 把计算时间保存成文件
+      //rdd.map(tuple=>tuple._1+" 获得相似图像的时间 "+System.currentTimeMillis()).saveAsTextFile("/spark/saveSimilarImageTime")
       rdd.foreach(tuple=>println(tuple._1+" 获得相似图像的时间 "+System.currentTimeMillis()))
       println("=======================保存相似图像=======================")
     }

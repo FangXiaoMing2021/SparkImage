@@ -1,12 +1,11 @@
 package com.fang.spark
 
-import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.client.Put
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.hbase.mapred.TableOutputFormat
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.mapred.JobConf
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.SparkContext
 import org.opencv.core.Core
 
 /**

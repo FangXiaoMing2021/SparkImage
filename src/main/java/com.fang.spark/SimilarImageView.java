@@ -140,7 +140,7 @@ public class SimilarImageView extends JFrame implements ActionListener {
         //将原图放入
         similarImageGetList.add(g);
         //similarImageDistance.add("Origin" + (this.index + 1));
-        similarImageDistance.add(""+this.index + 1);
+        similarImageDistance.add(""+(this.index + 1));
         for (int i = FIRST_INDEX; i < NUMBER_OF_SIMILAR_IMAGE; i++) {
             byte[] similarImageByte = similarImageNameByteList.get(i);
             String imageName = Bytes.toString(similarImageByte);

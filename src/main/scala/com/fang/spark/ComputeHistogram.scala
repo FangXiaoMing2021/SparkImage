@@ -1,6 +1,5 @@
 package com.fang.spark
 
-import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.client.{Put, Scan}
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.hbase.mapred.TableOutputFormat
@@ -8,7 +7,7 @@ import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil
 import org.apache.hadoop.hbase.util.{Base64, Bytes}
 import org.apache.hadoop.mapred.JobConf
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.SparkContext
 import org.apache.spark.mllib.clustering.KMeansModel
 import org.apache.spark.mllib.linalg.Vectors
 
@@ -29,7 +28,7 @@ object ComputeHistogram {
 
     val scan = new Scan()
     scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"))
-    scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
+    //scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
     val proto = ProtobufUtil.toScan(scan)
     val ScanToString = Base64.encodeBytes(proto.toByteArray())
     hbaseConf.set(TableInputFormat.SCAN, ScanToString)
@@ -44,15 +43,20 @@ object ComputeHistogram {
         val siftByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("sift"))
         // val siftTwoDim = siftArr2TowDim(siftByte)
         //(result._2.getRow, siftTwoDim)
-        val harrisByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("harris"))
-        val featureTwoDim = ImagesUtil.featureArr2TowDim(siftByte, harrisByte)
+        //val harrisByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("harris"))
+        var featureTwoDim:Array[Array[Float]] = null
+        if(siftByte!=null){
+          featureTwoDim = ImagesUtil.siftArr2TowDim(siftByte)
+        }
         (result._2.getRow, featureTwoDim)
       }
-    }
+    }.filter{tuple=>tuple._2!=null}
+
     ImagesUtil.printComputeTime(transformSift, "transform sift")
     val jobConf = new JobConf(hbaseConf)
     jobConf.setOutputFormat(classOf[TableOutputFormat])
     jobConf.set(TableOutputFormat.OUTPUT_TABLE, tableName)
+
     val loadKmeanModelTime = System.currentTimeMillis()
     val myKmeansModel = KMeansModel.load(sc, ImagesUtil.kmeansModelPath)
     ImagesUtil.printComputeTime(loadKmeanModelTime, "load kmeans mode")
@@ -69,7 +73,8 @@ object ComputeHistogram {
           histogramArray(predictedClusterIndex) = histogramArray(predictedClusterIndex) + 1
         }
         val put: Put = new Put(result._1)
-        put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"), Utils.serializeObject(histogramArray))
+        //TODO 改了序列化
+        put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"), ImagesUtil.ObjectToBytes(histogramArray))
         (new ImmutableBytesWritable, put)
       }
     }

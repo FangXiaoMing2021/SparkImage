@@ -6,8 +6,6 @@ import javax.imageio.ImageIO
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.HBaseConfiguration
-import org.apache.hadoop.hbase.mapred.TableOutputFormat
-import org.apache.hadoop.mapred.JobConf
 import org.apache.spark.SparkConf
 import org.opencv.core._
 import org.opencv.features2d.{DescriptorExtractor, FeatureDetector}
@@ -44,7 +42,7 @@ object ImagesUtil {
   def loadSparkConf(appName:String): SparkConf ={
     val sparkConf = new SparkConf()
       .setAppName(appName)
-      .setMaster("local[2]")
+      //.setMaster("local[2]")
       //.setMaster("spark://fang-ubuntu:7077")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     sparkConf
@@ -264,7 +262,6 @@ object ImagesUtil {
 
   /**
     * 对象转字节数组
-    *
     * @param obj
     * @return
     */

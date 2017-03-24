@@ -23,7 +23,7 @@ object KafkaImageProducer {
     props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
       "org.apache.kafka.common.serialization.StringSerializer")
     val producer = new KafkaProducer[String,Array[Byte]](props)
-    val fileList = new File("/home/fang/imageTest/1").listFiles()
+    val fileList = new File("/home/fang/imageTest").listFiles()
     println("图片总数为:"+fileList.length)
     for(i<- 0 to fileList.length-1 ){
       val file = fileList(i)

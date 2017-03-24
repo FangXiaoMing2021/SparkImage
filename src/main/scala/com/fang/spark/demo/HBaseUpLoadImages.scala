@@ -1,6 +1,8 @@
-package com.fang.spark
+package com.fang.spark.demo
 
 import java.net.InetAddress
+
+import com.fang.spark.ImagesUtil
 import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.util.Bytes
@@ -44,6 +46,7 @@ object HBaseUpLoadImages {
         val connection: Connection = ConnectionFactory.createConnection(hbaseConfig);
         val tableName = ImagesUtil.imageTableName
         val table: Table = connection.getTable(TableName.valueOf(tableName))
+        //table.setWriteBufferSize(3*1024*1024)//关键点2
         ImagesUtil.printComputeTime(begConnHBase, "connect hbase")
         //统计计算sift时间
         val begComputeSift = System.currentTimeMillis()
