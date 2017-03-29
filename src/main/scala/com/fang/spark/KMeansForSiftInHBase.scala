@@ -25,7 +25,7 @@ object KMeansForSiftInHBase extends App {
   hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
 
   val scan = new Scan()
-  scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"))
+  scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
   //添加harris
   //scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
   val proto = ProtobufUtil.toScan(scan)
@@ -38,7 +38,7 @@ object KMeansForSiftInHBase extends App {
   val transformSift = System.currentTimeMillis()
   val siftRDD = hbaseRDD.map {
     result =>
-      val siftByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("sift"))
+      val siftByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("harris"))
       //val harrisByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("harris"))
       //空指针异常
       if(siftByte!=null){

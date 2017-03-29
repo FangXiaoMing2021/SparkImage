@@ -57,6 +57,7 @@ object KafkaImageConsumer {
         (key, histogram)
       }
     }
+    println("============"+histogramFromHBaseRDD.count()+"===========")
     //缓存图像特征直方图库
     //TODO 解决内存不足的情况
     histogramFromHBaseRDD.cache()
@@ -79,14 +80,7 @@ object KafkaImageConsumer {
         getReceiveImageHistogram(imageTuple,myKmeansModel)
       }
     }
-
-    //imageTupleDStream.cache()
-    //保存从kafka接受的图像到HBase中
-    imageTupleDStream.foreachRDD {
-      rdd => {
-        saveImagesFromKafka(rdd)
-        }
-    }
+    imageTupleDStream.cache()
     //获取接受图像的名称和特征直方图
     val histogramFromKafkaDStream = imageTupleDStream.map(tuple => (tuple._1, tuple._4))
 
@@ -101,6 +95,12 @@ object KafkaImageConsumer {
     topNSimilarImageDStream.foreachRDD {
       rdd => {
         saveSimilarImageName(rdd)
+      }
+    }
+    //保存从kafka接受的图像到HBase中
+    imageTupleDStream.foreachRDD {
+      rdd => {
+        saveImagesFromKafka(rdd)
       }
     }
     //启动程序
@@ -132,18 +132,18 @@ object KafkaImageConsumer {
           put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), tuple._2)
           //TODO 改了序列化
           put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"), ImagesUtil.ObjectToBytes(tuple._4))
-          val sift = tuple._3
-          if (!sift.isEmpty) {
-            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
-          }
-//          val harris = tuple._4
-//          if (!harris.isEmpty) {
-//            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"), sift.get)
+//          val sift = tuple._3
+//          if (!sift.isEmpty) {
+//            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
 //          }
+          val harris = tuple._3
+          if (!harris.isEmpty) {
+            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"), harris.get)
+          }
           (new ImmutableBytesWritable, put)
         }
       }.saveAsHadoopDataset(jobConf)
-      println("================保存完成==================")
+      println("================保存接受的图像完成==================")
     }
   }
 
@@ -158,7 +158,8 @@ object KafkaImageConsumer {
     //加载Opencv库,在每个分区都需加载
     System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
     val imageBytes = imageTuple._2
-    val sift = ImagesUtil.getImageSift(imageBytes)
+    //val sift = ImagesUtil.getImageSift(imageBytes)
+    val sift = ImagesUtil.getImageHARRIS(imageBytes)
     val histogramArray = new Array[Int](myKmeansModel.clusterCenters.length)
     if (!sift.isEmpty) {
       val siftByteArray = sift.get
@@ -219,6 +220,7 @@ object KafkaImageConsumer {
     val matchImageRDD = groupRDD.map {
       tuple => {
         val top10 = Array[(Int, String)](
+          //出现数组没有满的情况,就是相似图像出现了,名称为0的图像,程序抛出异常
           (Int.MaxValue, "0"), (Int.MaxValue, "0"),
           (Int.MaxValue, "0"), (Int.MaxValue, "0"),
           (Int.MaxValue, "0"), (Int.MaxValue, "0"),
@@ -285,7 +287,7 @@ object KafkaImageConsumer {
       //TODO 把计算时间保存成文件
       //rdd.map(tuple=>tuple._1+" 获得相似图像的时间 "+System.currentTimeMillis()).saveAsTextFile("/spark/saveSimilarImageTime")
       rdd.foreach(tuple=>println(tuple._1+" 获得相似图像的时间 "+System.currentTimeMillis()))
-      println("=======================保存相似图像=======================")
+      println("=======================保存相似图像完成=======================")
     }
   }
 

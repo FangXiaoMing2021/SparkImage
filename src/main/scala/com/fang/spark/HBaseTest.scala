@@ -16,9 +16,9 @@
  */
 
 // scalastyle:off println
-package com.fang.spark.exampleCode
+package com.fang.spark
 
-import org.apache.hadoop.hbase.client.{Admin, Connection, ConnectionFactory, Scan}
+import org.apache.hadoop.hbase.client.{Admin, Connection, Scan}
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil
 import org.apache.hadoop.hbase.util.{Base64, Bytes}
@@ -30,7 +30,8 @@ import org.apache.spark._
   */
 object HBaseTest {
   def main(args: Array[String]) {
-    val sparkConf = new SparkConf().setAppName("HBaseTest").setMaster("spark://fang-ubuntu:7077")
+    val sparkConf = new SparkConf().setAppName("HBaseTest")
+      .setMaster("local[4]")
     val sc = new SparkContext(sparkConf)
     // please ensure HBASE_CONF_DIR is on classpath of spark driver
     // e.g: set it through spark.driver.extraClassPath property
@@ -45,27 +46,28 @@ object HBaseTest {
     hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
     hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
     val scan = new Scan()
-    scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"))
+    scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"))
     val proto = ProtobufUtil.toScan(scan)
     val ScanToString = Base64.encodeBytes(proto.toByteArray())
     hbaseConf.set(TableInputFormat.SCAN, ScanToString)
     // Initialize hBase table if necessary
-    val connection = ConnectionFactory.createConnection(hbaseConf)
-    val admin = connection.getAdmin
-    if (!admin.tableExists(TableName.valueOf("imagesTable"))) {
-      val columnFamilys= List("image")
-      createTable("imagesTable",columnFamilys,connection)
-    }
+//    val connection = ConnectionFactory.createConnection(hbaseConf)
+//    val admin = connection.getAdmin
+//    if (!admin.tableExists(TableName.valueOf("imagesTable"))) {
+//      val columnFamilys= List("image")
+//      createTable("imagesTable",columnFamilys,connection)
+//    }
     //读取HBase中表的数据
     val hBaseRDD = sc.newAPIHadoopRDD(hbaseConf, classOf[TableInputFormat],
       classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
       classOf[org.apache.hadoop.hbase.client.Result])
-    val sqlContext = new org.apache.spark.sql.SQLContext(sc)
-    import sqlContext.implicits._
-    hBaseRDD.toDF
+    println(hBaseRDD.count())
+//    val sqlContext = new org.apache.spark.sql.SQLContext(sc)
+//    import sqlContext.implicits._
+//    hBaseRDD.toDF
 
     sc.stop()
-    admin.close()
+    //admin.close()
   }
   //创建HBase表
   def createTable(tableName: String, columnFamilys: List[String], connection: Connection): Unit = {

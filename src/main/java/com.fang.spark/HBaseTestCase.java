@@ -1,4 +1,4 @@
-package com.fang.spark.demo;
+package com.fang.spark;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -140,8 +140,6 @@ public class HBaseTestCase {
             byte[] imageBinary = similarImage.getValue(Bytes.toBytes("image"), Bytes.toBytes("binary"));
             System.out.println(imageBinary.length);
         }
-
-
 
     }
 }
