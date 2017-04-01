@@ -18,10 +18,10 @@ import org.opencv.core.Core
   * 修改了foreachPartition转换操作为map
   * ./spark-submit --master spark://fang-ubuntu:7077 --class com.fang.spark.HBaseUpLoadImages --jars opencv-2413.jar MyProject.jar
   */
-object SaveImagesInHBase {
+object SaveImagesHarrisInHBase {
   def main(args: Array[String]): Unit = {
 
-    val sparkConf = ImagesUtil.loadSparkConf("SaveImagesInHBase")
+    val sparkConf = ImagesUtil.loadSparkConf("SaveImagesHarrisInHBase")
 
     val sparkContext = new SparkContext(sparkConf)
     //加载HBase配置
@@ -31,7 +31,7 @@ object SaveImagesInHBase {
     //设置job的输出格式
     jobConf.setOutputFormat(classOf[TableOutputFormat])
     val begUpload = System.currentTimeMillis()
-    val imagesRDD = sparkContext.binaryFiles(ImagesUtil.imagePath)
+    val imagesRDD = sparkContext.binaryFiles(ImagesUtil.imagePath,15)
     ImagesUtil.printComputeTime(begUpload, "upload image")
     //统计计算sift时间
     val begComputeSift = System.currentTimeMillis()
@@ -67,13 +67,13 @@ object SaveImagesInHBase {
         (new ImmutableBytesWritable, put)
       }
     }
-    ImagesUtil.printComputeTime(begComputeSift, "compute sift")
+    ImagesUtil.printComputeTime(begComputeSift, "compute harris")
     //保存时间
     val saveImageTime = System.currentTimeMillis()
     // imagesResult.saveAsNewAPIHadoopDataset(jobConf)
     imagesResult.saveAsHadoopDataset(jobConf)
     //imagesResult.count()
-    ImagesUtil.printComputeTime(saveImageTime, "save image time")
+    ImagesUtil.printComputeTime(saveImageTime, "save image harris time")
     sparkContext.stop()
   }
 

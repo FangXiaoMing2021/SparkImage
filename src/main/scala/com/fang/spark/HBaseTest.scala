@@ -32,6 +32,7 @@ object HBaseTest {
   def main(args: Array[String]) {
     val sparkConf = new SparkConf().setAppName("HBaseTest")
       .setMaster("local[4]")
+      //.setMaster("spark://202.114.30.165:7077")
     val sc = new SparkContext(sparkConf)
     // please ensure HBASE_CONF_DIR is on classpath of spark driver
     // e.g: set it through spark.driver.extraClassPath property
@@ -46,7 +47,7 @@ object HBaseTest {
     hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
     hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
     val scan = new Scan()
-    scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"))
+    scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
     val proto = ProtobufUtil.toScan(scan)
     val ScanToString = Base64.encodeBytes(proto.toByteArray())
     hbaseConf.set(TableInputFormat.SCAN, ScanToString)

@@ -14,7 +14,7 @@ import org.opencv.core.Core
 /**
   * Created by fang on 17-1-5.
   */
-object SaveHarrisInHBase {
+object SaveHarrisFromHBaseImage {
   def main(args: Array[String]): Unit = {
     val sparkConf = ImagesUtil.loadSparkConf("SaveHarrisInHBase")
 

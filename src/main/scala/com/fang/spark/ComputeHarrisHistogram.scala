@@ -14,10 +14,10 @@ import org.apache.spark.mllib.linalg.Vectors
 /**
   * Created by fang on 17-1-5.
   */
-object ComputeHistogram {
+object ComputeHarrisHistogram {
   def main(args: Array[String]): Unit = {
     val beginComputeHistogram = System.currentTimeMillis()
-    val sparkConf = ImagesUtil.loadSparkConf("ComputeHistogram")
+    val sparkConf = ImagesUtil.loadSparkConf("ComputeHarrisHistogram")
 
     val sc = new SparkContext(sparkConf)
     sc.setLogLevel("WARN")
@@ -27,8 +27,8 @@ object ComputeHistogram {
     hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
 
     val scan = new Scan()
+    //scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"))
     scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
-    //scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
     val proto = ProtobufUtil.toScan(scan)
     val ScanToString = Base64.encodeBytes(proto.toByteArray())
     hbaseConf.set(TableInputFormat.SCAN, ScanToString)
@@ -52,7 +52,7 @@ object ComputeHistogram {
       }
     }.filter{tuple=>tuple._2!=null}
 
-    ImagesUtil.printComputeTime(transformSift, "transform sift")
+    ImagesUtil.printComputeTime(transformSift, "transform harris")
     val jobConf = new JobConf(hbaseConf)
     jobConf.setOutputFormat(classOf[TableOutputFormat])
     jobConf.set(TableOutputFormat.OUTPUT_TABLE, tableName)

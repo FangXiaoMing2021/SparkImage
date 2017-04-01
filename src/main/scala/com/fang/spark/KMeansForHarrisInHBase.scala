@@ -13,9 +13,9 @@ import org.apache.spark.SparkContext
 import org.apache.spark.mllib.clustering.{KMeans, KMeansModel}
 import org.apache.spark.mllib.linalg.Vectors
 
-object KMeansForSiftInHBase extends App {
+object KMeansForHarrisInHBase extends App {
   val beginKMeans = System.currentTimeMillis()
-  val sparkConf = ImagesUtil.loadSparkConf("KMeansForSiftInHBase")
+  val sparkConf = ImagesUtil.loadSparkConf("KMeansForHarrisInHBase")
 
   val sc = new SparkContext(sparkConf)
   sc.setLogLevel("WARN")
@@ -25,7 +25,7 @@ object KMeansForSiftInHBase extends App {
   hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
 
   val scan = new Scan()
-  scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"))
+  scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
   //添加harris
   //scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
   val proto = ProtobufUtil.toScan(scan)
@@ -38,7 +38,7 @@ object KMeansForSiftInHBase extends App {
   val transformSift = System.currentTimeMillis()
   val siftRDD = hbaseRDD.map {
     result =>
-      val siftByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("sift"))
+      val siftByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("harris"))
       //val harrisByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("harris"))
       //空指针异常
       if(siftByte!=null){
@@ -50,7 +50,7 @@ object KMeansForSiftInHBase extends App {
   }.filter(_!=null)
   //siftRDD.persist(StorageLevel.MEMORY_AND_DISK_SER_2)
   val siftDenseRDD = siftRDD.flatMap(_._2)
-    .map(data => Vectors.dense(data.map(i => i.toDouble))).cache()
+    .map(data => Vectors.dense(data.map(i => i.toDouble))).repartition(100).cache()
     //.persist(StorageLevel.MEMORY_AND_DISK)
   ImagesUtil.printComputeTime(transformSift, "tranform sift")
   val kmeansTime = System.currentTimeMillis()
