@@ -31,7 +31,7 @@ import org.apache.spark._
 object HBaseTest {
   def main(args: Array[String]) {
     val sparkConf = new SparkConf().setAppName("HBaseTest")
-      .setMaster("local[4]")
+      //.setMaster("local[4]")
       //.setMaster("spark://202.114.30.165:7077")
     val sc = new SparkContext(sparkConf)
     // please ensure HBASE_CONF_DIR is on classpath of spark driver
@@ -62,7 +62,9 @@ object HBaseTest {
     val hBaseRDD = sc.newAPIHadoopRDD(hbaseConf, classOf[TableInputFormat],
       classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
       classOf[org.apache.hadoop.hbase.client.Result])
-    println(hBaseRDD.count())
+    println("==============================================")
+    println("============="+hBaseRDD.count()+"============")
+    println("==============================================")
 //    val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 //    import sqlContext.implicits._
 //    hBaseRDD.toDF

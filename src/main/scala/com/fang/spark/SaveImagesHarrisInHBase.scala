@@ -31,6 +31,8 @@ object SaveImagesHarrisInHBase {
     //设置job的输出格式
     jobConf.setOutputFormat(classOf[TableOutputFormat])
     val begUpload = System.currentTimeMillis()
+    //默认的读取并行度为2，增加集群机器数量并不能提高读取速度
+    //设置读取数据的并行度，明显加快速度
     val imagesRDD = sparkContext.binaryFiles(ImagesUtil.imagePath,15)
     ImagesUtil.printComputeTime(begUpload, "upload image")
     //统计计算sift时间
