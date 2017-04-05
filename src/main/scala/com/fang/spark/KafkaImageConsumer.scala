@@ -23,13 +23,14 @@ import scala.util.control.Breaks._
 /**
   * Created by fang on 16-12-21.
   * 从Kafka获取图像数据,计算该图像的sift直方图,和HBase中的图像直方图对比,输出最相近的图像名
+  * Spark会读取本地的Hadoop配置文件
   */
 object KafkaImageConsumer {
   def main(args: Array[String]): Unit = {
     val sparkConf = ImagesUtil.loadSparkConf("KafkaImageProcess")
 
-    //批次间隔500ms
-    val ssc = new StreamingContext(sparkConf, Milliseconds(500))
+    //批次间隔800ms
+    val ssc = new StreamingContext(sparkConf, Milliseconds(1000))
     ssc.checkpoint("checkpoint")
     ssc.sparkContext.setLogLevel("WARN")
     //连接HBase参数配置
@@ -57,7 +58,7 @@ object KafkaImageConsumer {
         (key, histogram)
       }
     }
-    println("============"+histogramFromHBaseRDD.count()+"===========")
+    //println("============"+histogramFromHBaseRDD.count()+"===========")
     //缓存图像特征直方图库
     //TODO 解决内存不足的情况
     histogramFromHBaseRDD.cache()
@@ -67,7 +68,7 @@ object KafkaImageConsumer {
     //从Kafka接收图像数据
     val topics = Set("image_topic")
     val kafkaParams = Map[String, String](
-      "metadata.broker.list" -> "218.199.92.225:9092,218.199.92.226:9092,218.199.92.227:9092"
+      "metadata.broker.list" -> "202.114.30.171:9092,202.114.30.172:9092,202.114.30.173:9092"
       //"serializer.class" -> "kafka.serializer.DefaultDecoder",
       //"key.serializer.class" -> "kafka.serializer.StringEncoder"
     )
@@ -98,11 +99,11 @@ object KafkaImageConsumer {
       }
     }
     //保存从kafka接受的图像到HBase中
-    imageTupleDStream.foreachRDD {
-      rdd => {
-        saveImagesFromKafka(rdd)
-      }
-    }
+//    imageTupleDStream.foreachRDD {
+//      rdd => {
+//        saveImagesFromKafka(rdd)
+//      }
+//    }
     //启动程序
     ssc.start()
     ssc.awaitTermination()
@@ -143,7 +144,7 @@ object KafkaImageConsumer {
           (new ImmutableBytesWritable, put)
         }
       }.saveAsHadoopDataset(jobConf)
-      println("================保存接受的图像完成==================")
+      println("================保存接收的图像完成==================")
     }
   }
 
@@ -284,9 +285,9 @@ object KafkaImageConsumer {
       //       println("=======================保存相似图像=======================")
       //          val saveSimilarTime = System.currentTimeMillis()
       //          println("获得相似图像的时间"+saveSimilarTime)
-      //TODO 把计算时间保存成文件
-      //rdd.map(tuple=>tuple._1+" 获得相似图像的时间 "+System.currentTimeMillis()).saveAsTextFile("/spark/saveSimilarImageTime")
-      rdd.foreach(tuple=>println(tuple._1+" 获得相似图像的时间 "+System.currentTimeMillis()))
+      //把计算时间保存成文件
+      rdd.map(tuple=>tuple._1+" 获得相似图像的时间 "+System.currentTimeMillis()).saveAsTextFile("/spark/streamingTime"+System.currentTimeMillis())
+     // rdd.foreach(tuple=>println(tuple._1+" 获得相似图像的时间 "+System.currentTimeMillis()))
       println("=======================保存相似图像完成=======================")
     }
   }

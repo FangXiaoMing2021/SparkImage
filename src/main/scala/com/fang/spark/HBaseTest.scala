@@ -47,7 +47,7 @@ object HBaseTest {
     hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
     hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
     val scan = new Scan()
-    scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
+    scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"))
     val proto = ProtobufUtil.toScan(scan)
     val ScanToString = Base64.encodeBytes(proto.toByteArray())
     hbaseConf.set(TableInputFormat.SCAN, ScanToString)

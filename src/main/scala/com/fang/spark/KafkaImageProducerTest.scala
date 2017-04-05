@@ -4,13 +4,15 @@ import java.awt.image.BufferedImage
 import java.io._
 import java.util.HashMap
 import javax.imageio.ImageIO
+
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
+
 /**
   * Created by fang on 16-12-21.
   * 启动kafka: bin/kafka-server-start.sh config/server.properties &
   * 该代码实现读取本地图像文件夹,然后使用kafka发送消息
   */
-object KafkaImageProducer {
+object KafkaImageProducerTest {
   def main(args: Array[String]) {
     val topic = "image_topic"
     val brokers = "fang-ubuntu:9092,fei-ubuntu:9092,kun-ubuntu:9092"
@@ -24,18 +26,8 @@ object KafkaImageProducer {
       "org.apache.kafka.common.serialization.StringSerializer")
     val producer = new KafkaProducer[String,Array[Byte]](props)
     val fileList = new File("/home/user/imagesTest/n01491361").listFiles()
-    println("图片总数为:"+fileList.length)
-//    for(i<- 0 to 50 ){
-//      val file = fileList(i)
-//      val bi:BufferedImage= ImageIO.read(file)
-//      val out = new ByteArrayOutputStream
-//      val flag = ImageIO.write(bi, "jpg", out)
-//      val image = out.toByteArray
-//      val message = new ProducerRecord[String, Array[Byte]](topic, file.getName, image)
-//      producer.send(message)
-//      println(file.getName+" 时间 "+System.currentTimeMillis())
-//    }
-    for(i<- 0 to 199 ){
+    println("图片总数为:"+49)
+    for(i<- 0 to 49 ){
       val file = fileList(i)
       val bi:BufferedImage= ImageIO.read(file)
       val out = new ByteArrayOutputStream
@@ -44,7 +36,6 @@ object KafkaImageProducer {
       val message = new ProducerRecord[String, Array[Byte]](topic, file.getName, image)
       producer.send(message)
       println(file.getName+" 时间 "+System.currentTimeMillis())
-      Thread.sleep(20)
     }
     producer.close()
   }

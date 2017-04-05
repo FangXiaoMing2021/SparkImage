@@ -33,7 +33,7 @@ object SaveImagesHarrisInHBase {
     val begUpload = System.currentTimeMillis()
     //默认的读取并行度为2，增加集群机器数量并不能提高读取速度
     //设置读取数据的并行度，明显加快速度
-    val imagesRDD = sparkContext.binaryFiles(ImagesUtil.imagePath,15)
+    val imagesRDD = sparkContext.binaryFiles(ImagesUtil.imagePath,24)
     ImagesUtil.printComputeTime(begUpload, "upload image")
     //统计计算sift时间
     val begComputeSift = System.currentTimeMillis()
@@ -74,7 +74,9 @@ object SaveImagesHarrisInHBase {
     val saveImageTime = System.currentTimeMillis()
     // imagesResult.saveAsNewAPIHadoopDataset(jobConf)
     imagesResult.saveAsHadoopDataset(jobConf)
-    //imagesResult.count()
+//    println("===============================")
+//    println(imagesResult.count())
+//    println("===============================")
     ImagesUtil.printComputeTime(saveImageTime, "save image harris time")
     sparkContext.stop()
   }

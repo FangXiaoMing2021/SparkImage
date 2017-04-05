@@ -33,7 +33,7 @@ object KMeansForHarrisInHBase extends App {
   hbaseConf.set(TableInputFormat.SCAN, ScanToString)
   val hbaseRDD = sc.newAPIHadoopRDD(hbaseConf, classOf[TableInputFormat],
     classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
-    classOf[org.apache.hadoop.hbase.client.Result])
+    classOf[org.apache.hadoop.hbase.client.Result]).repartition(32)
   ImagesUtil.printComputeTime(readSiftTime, "readSiftTime")
   val transformSift = System.currentTimeMillis()
   val siftRDD = hbaseRDD.map {
@@ -50,11 +50,11 @@ object KMeansForHarrisInHBase extends App {
   }.filter(_!=null)
   //siftRDD.persist(StorageLevel.MEMORY_AND_DISK_SER_2)
   val siftDenseRDD = siftRDD.flatMap(_._2)
-    .map(data => Vectors.dense(data.map(i => i.toDouble))).repartition(50).cache()
+    .map(data => Vectors.dense(data.map(i => i.toDouble))).cache()
     //.persist(StorageLevel.MEMORY_AND_DISK)
   ImagesUtil.printComputeTime(transformSift, "tranform sift")
   val kmeansTime = System.currentTimeMillis()
-  val numClusters = 100
+  val numClusters = 200
   val numIterations = 30
   val runTimes = 3
   var clusterIndex: Int = 0

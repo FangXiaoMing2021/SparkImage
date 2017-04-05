@@ -18,11 +18,11 @@ import sun.misc.{BASE64Decoder, BASE64Encoder}
 object ImagesUtil {
   //n01491361  n01984695
   //val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n01491361"
-  val imagePath = "hdfs://202.114.30.171:9000/imagesNet/*/*"
+  val imagePath = "hdfs://202.114.30.171:9000/imagesNet/n017*"
   //val imagePath = "/home/fang/images/n01984695"
   //hdfs dfs -rm -r /spark/kmeansModel
   //val imagePath = "/home/fang/imageTest"
-  val kmeansModelPath = "hdfs://202.114.30.171:9000/saveKmeans/kmeansModel"
+  val kmeansModelPath = "hdfs://202.114.30.171:9000/saveKmeans/kmeansModel5Worker32"
   private[spark] val encoder = new BASE64Encoder
   private[spark] val decoder = new BASE64Decoder
   //val imageTableName = "imageNetTable"
@@ -41,7 +41,7 @@ object ImagesUtil {
   def loadSparkConf(appName:String): SparkConf ={
     val sparkConf = new SparkConf()
       .setAppName(appName)
-     // .setMaster("local[4]")
+      //.setMaster("local[8]")
       //.setMaster("spark://fang-ubuntu:7077")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     sparkConf
