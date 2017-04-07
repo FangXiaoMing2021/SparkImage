@@ -31,7 +31,7 @@ object SaveImagesSiftInHBase {
     //设置job的输出格式
     jobConf.setOutputFormat(classOf[TableOutputFormat])
     val begUpload = System.currentTimeMillis()
-    val imagesRDD = sparkContext.binaryFiles(ImagesUtil.imagePath,15)
+    val imagesRDD = sparkContext.binaryFiles(ImagesUtil.imagePath,18)
     ImagesUtil.printComputeTime(begUpload, "upload image")
     //统计计算sift时间
     val begComputeSift = System.currentTimeMillis()
@@ -71,8 +71,11 @@ object SaveImagesSiftInHBase {
     //保存时间
     val saveImageTime = System.currentTimeMillis()
     // imagesResult.saveAsNewAPIHadoopDataset(jobConf)
-    imagesResult.saveAsHadoopDataset(jobConf)
+//    imagesResult.saveAsHadoopDataset(jobConf)
     //imagesResult.count()
+    println("===============================")
+    println(imagesResult.count())
+    println("===============================")
     ImagesUtil.printComputeTime(saveImageTime, "save image sift time")
     sparkContext.stop()
   }

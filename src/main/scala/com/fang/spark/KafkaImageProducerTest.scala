@@ -26,8 +26,8 @@ object KafkaImageProducerTest {
       "org.apache.kafka.common.serialization.StringSerializer")
     val producer = new KafkaProducer[String,Array[Byte]](props)
     val fileList = new File("/home/user/imagesTest/n01491361").listFiles()
-    println("图片总数为:"+49)
-    for(i<- 0 to 49 ){
+    println("图片总数为:"+10)
+    for(i<- 0 to 10 ){
       val file = fileList(i)
       val bi:BufferedImage= ImageIO.read(file)
       val out = new ByteArrayOutputStream
@@ -35,7 +35,8 @@ object KafkaImageProducerTest {
       val image = out.toByteArray
       val message = new ProducerRecord[String, Array[Byte]](topic, file.getName, image)
       producer.send(message)
-      println(file.getName+" 时间 "+System.currentTimeMillis())
+      Thread.sleep(100)
+     // println(file.getName+" 时间 "+System.currentTimeMillis())
     }
     producer.close()
   }

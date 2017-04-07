@@ -18,15 +18,20 @@ import sun.misc.{BASE64Decoder, BASE64Encoder}
 object ImagesUtil {
   //n01491361  n01984695
   //val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n01491361"
-  val imagePath = "hdfs://202.114.30.171:9000/imagesNet/n017*"
-  //val imagePath = "/home/fang/images/n01984695"
-  //hdfs dfs -rm -r /spark/kmeansModel
+  //10000张图像
+//  val imagePath = "hdfs://202.114.30.171:9000/imagesNet/n019*"
+  //5000张图像
+  val imagePath = "hdfs://202.114.30.171:9000/imagesNet/n0177*"
+  //val imagePath = "hdfs://202.114.30.171:9000/testData1W/*/*"
+  //val imagePath = "/home/fang/images/n01984695"n017
+  //hdfs dfs -rm -r /spark/kmeansMode
   //val imagePath = "/home/fang/imageTest"
-  val kmeansModelPath = "hdfs://202.114.30.171:9000/saveKmeans/kmeansModel5Worker32"
+  val kmeansModelPath = "hdfs://202.114.30.171:9000/saveKmeans/kmeansModel"
   private[spark] val encoder = new BASE64Encoder
   private[spark] val decoder = new BASE64Decoder
   //val imageTableName = "imageNetTable"
   val imageTableName = "imagesTest"
+  //val imageTableName = "imagesTable"
 
   def loadHBaseConf(): Configuration ={
     val hbaseConf = HBaseConfiguration.create()
@@ -146,6 +151,7 @@ object ImagesUtil {
     if (numComponents == 3) {
      test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8UC3)
     } else if(numComponents==1){
+     // return None
       test_mat = new Mat(bi.getHeight, bi.getWidth, CvType.CV_8U)
     }else{
       println("**********************Components not 1 and 3****************************")

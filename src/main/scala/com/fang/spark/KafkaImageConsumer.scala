@@ -30,7 +30,7 @@ object KafkaImageConsumer {
     val sparkConf = ImagesUtil.loadSparkConf("KafkaImageProcess")
 
     //批次间隔800ms
-    val ssc = new StreamingContext(sparkConf, Milliseconds(1000))
+    val ssc = new StreamingContext(sparkConf, Milliseconds(800))
     ssc.checkpoint("checkpoint")
     ssc.sparkContext.setLogLevel("WARN")
     //连接HBase参数配置
@@ -58,10 +58,13 @@ object KafkaImageConsumer {
         (key, histogram)
       }
     }
-    //println("============"+histogramFromHBaseRDD.count()+"===========")
+
     //缓存图像特征直方图库
     //TODO 解决内存不足的情况
-    histogramFromHBaseRDD.cache()
+    histogramFromHBaseRDD
+      //.repartition(30)
+      .cache()
+    println("============"+histogramFromHBaseRDD.count()+"===========")
     //加载kmeans模型
     val myKmeansModel = KMeansModel.load(ssc.sparkContext, ImagesUtil.kmeansModelPath)
 
@@ -73,7 +76,10 @@ object KafkaImageConsumer {
       //"key.serializer.class" -> "kafka.serializer.StringEncoder"
     )
 
-    val imageFromKafkaDStream = KafkaUtils.createDirectStream[String, Array[Byte], StringDecoder, DefaultDecoder](ssc, kafkaParams, topics)
+    val imageFromKafkaDStream = KafkaUtils
+      .createDirectStream[String, Array[Byte], StringDecoder, DefaultDecoder](ssc, kafkaParams, topics)
+      .repartition(30)
+      .cache()
 
     //计算kafkaStream中每个图像的特征直方图,返回图像名称和相应的特征直方图RDD
     val imageTupleDStream = imageFromKafkaDStream.map {
@@ -81,7 +87,7 @@ object KafkaImageConsumer {
         getReceiveImageHistogram(imageTuple,myKmeansModel)
       }
     }
-    imageTupleDStream.cache()
+   // imageTupleDStream.cache()
     //获取接受图像的名称和特征直方图
     val histogramFromKafkaDStream = imageTupleDStream.map(tuple => (tuple._1, tuple._4))
 
@@ -286,7 +292,7 @@ object KafkaImageConsumer {
       //          val saveSimilarTime = System.currentTimeMillis()
       //          println("获得相似图像的时间"+saveSimilarTime)
       //把计算时间保存成文件
-      rdd.map(tuple=>tuple._1+" 获得相似图像的时间 "+System.currentTimeMillis()).saveAsTextFile("/spark/streamingTime"+System.currentTimeMillis())
+      rdd.map(tuple=>tuple._1+" 获得相似图像的时间 "+System.currentTimeMillis()).saveAsTextFile("/sparkStreaming100Pic/"+System.currentTimeMillis())
      // rdd.foreach(tuple=>println(tuple._1+" 获得相似图像的时间 "+System.currentTimeMillis()))
       println("=======================保存相似图像完成=======================")
     }
