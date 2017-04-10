@@ -16,7 +16,6 @@ import org.apache.spark.mllib.linalg.Vectors
 object KMeansForSiftInHBase extends App {
   val beginKMeans = System.currentTimeMillis()
   val sparkConf = ImagesUtil.loadSparkConf("KMeansForSiftInHBase")
-
   val sc = new SparkContext(sparkConf)
   sc.setLogLevel("WARN")
   val readSiftTime = System.currentTimeMillis()
@@ -25,9 +24,9 @@ object KMeansForSiftInHBase extends App {
   hbaseConf.set(TableInputFormat.INPUT_TABLE, tableName)
 
   val scan = new Scan()
-  scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
+//  scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"))
   //添加harris
-  //scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
+  scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
   val proto = ProtobufUtil.toScan(scan)
   val ScanToString = Base64.encodeBytes(proto.toByteArray())
   hbaseConf.set(TableInputFormat.SCAN, ScanToString)
@@ -39,6 +38,7 @@ object KMeansForSiftInHBase extends App {
   val siftRDD = hbaseRDD.map {
     result =>
       val siftByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("harris"))
+      //HBase中没有数据异常
       //val harrisByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("harris"))
       //空指针异常
       if(siftByte!=null){
@@ -54,9 +54,9 @@ object KMeansForSiftInHBase extends App {
     //.persist(StorageLevel.MEMORY_AND_DISK)
   ImagesUtil.printComputeTime(transformSift, "tranform sift")
   val kmeansTime = System.currentTimeMillis()
-  val numClusters = 100
-  val numIterations = 30
-  val runTimes = 3
+  val numClusters = 3
+  val numIterations = 3
+  val runTimes = 1
   var clusterIndex: Int = 0
   // java.lang.IllegalArgumentException: Size exceeds Integer.MAX_VALUE
   val clusters: KMeansModel = KMeans.train(siftDenseRDD, numClusters, numIterations, runTimes)

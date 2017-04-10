@@ -18,11 +18,14 @@ import sun.misc.{BASE64Decoder, BASE64Encoder}
 object ImagesUtil {
   //n01491361  n01984695
   //val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n01491361"
-  val imagePath = "hdfs://218.199.92.225:9000/imagesNet/n01491361"
-  //val imagePath = "/home/fang/images/n01984695"
+  val imagePath = "hdfs://202.114.30.171:9000/imagesNet/n01530575"
+  //val imagePath = "/home/fang/images/n01984695"n01491361
   //hdfs dfs -rm -r /spark/kmeansModel
   //val imagePath = "/home/fang/imageTest"
-  val kmeansModelPath = "/home/fang/kmeansModel"
+  //Exception in thread "main" org.apache.hadoop.security.AccessControlException:
+  // Permission denied: user=user, access=WRITE, inode="/kmeansModel/metadata/_temporary/0":hadoop:supergroup:drwxr-xr-x
+
+  val kmeansModelPath = "hdfs://202.114.30.171:9000/user/kmeansModel"
   private[spark] val encoder = new BASE64Encoder
   private[spark] val decoder = new BASE64Decoder
   //val imageTableName = "imageNetTable"
@@ -41,7 +44,7 @@ object ImagesUtil {
   def loadSparkConf(appName:String): SparkConf ={
     val sparkConf = new SparkConf()
       .setAppName(appName)
-      .setMaster("local[4]")
+      //.setMaster("local[4]")
       //.setMaster("spark://fang-ubuntu:7077")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     sparkConf

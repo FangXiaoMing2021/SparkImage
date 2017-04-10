@@ -21,7 +21,7 @@ import org.opencv.core.Core
 object SaveImagesInHBase {
   def main(args: Array[String]): Unit = {
 
-    val sparkConf = ImagesUtil.loadSparkConf("SaveImagesInHBase")
+    val sparkConf = ImagesUtil.loadSparkConf("SaveSiftInHBase")
 
     val sparkContext = new SparkContext(sparkConf)
     //加载HBase配置
@@ -50,20 +50,20 @@ object SaveImagesInHBase {
         val put: Put = new Put(Bytes.toBytes(imageName))
         put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), imageBinary)
         put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("path"), Bytes.toBytes(imageFile._1))
-        //提取sift特征
-//        val sift = ImagesUtil.getImageSift(imageBinary)
-//        if (!sift.isEmpty) {
-//          put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
-//        }else{
-//          println(imageName+"no sift feature")
-//        }
-        //提取HARRIS特征
-        val harris = ImagesUtil.getImageHARRIS(imageBinary)
-        if (!harris.isEmpty) {
-          put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"), harris.get)
+//        提取sift特征
+        val sift = ImagesUtil.getImageSift(imageBinary)
+        if (!sift.isEmpty) {
+          put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
         }else{
-          println(imageName+"no harris feature")
+          println(imageName+"no sift feature")
         }
+     //   提取HARRIS特征
+//        val harris = ImagesUtil.getImageHARRIS(imageBinary)
+//        if (!harris.isEmpty) {
+//          put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"), harris.get)
+//        }else{
+//          println(imageName+"no harris feature")
+//        }
         (new ImmutableBytesWritable, put)
       }
     }

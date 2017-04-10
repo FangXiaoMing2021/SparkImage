@@ -44,9 +44,9 @@ object HBaseTest {
     // http://hbase.apache.org/apidocs/org/apache/hadoop/hbase/mapreduce/TableInputFormat.html
     hbaseConf.set(TableInputFormat.INPUT_TABLE, "imagesTest")
     hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
-    hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
+    hbaseConf.set("hbase.zookeeper.quorum", "202.114.30.171")
     val scan = new Scan()
-    scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("histogram"))
+    scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
     val proto = ProtobufUtil.toScan(scan)
     val ScanToString = Base64.encodeBytes(proto.toByteArray())
     hbaseConf.set(TableInputFormat.SCAN, ScanToString)
