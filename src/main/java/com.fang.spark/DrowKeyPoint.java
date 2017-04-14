@@ -1,9 +1,7 @@
 package com.fang.spark;
 
-import org.opencv.core.Core;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfKeyPoint;
-import org.opencv.core.Scalar;
+import org.apache.commons.io.FileUtils;
+import org.opencv.core.*;
 import org.opencv.features2d.FeatureDetector;
 import org.opencv.features2d.Features2d;
 import org.opencv.highgui.Highgui;
@@ -12,6 +10,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -23,7 +22,11 @@ public class DrowKeyPoint {
         // Features SEARCH
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
         //n01751748_5705没有sift特征点
-        Mat image = Highgui.imread("/home/fang/images/train/3/n01751748_7878.JPEG");
+        //Mat image = Highgui.imread("/home/fang/images/train/3/n01751748_7878.JPEG");
+        File file = new File("/home/fang/images/train/3/n01751748_7878.JPEG");
+        byte[] imageData = FileUtils.readFileToByteArray(file);
+        Mat image = Highgui.imdecode(new MatOfByte(imageData), Highgui.CV_LOAD_IMAGE_UNCHANGED);
+
 //        File imageFile =new File("/home/fang/images/n01984695_16712.JPEG");
 //        BufferedImage bi = ImageIO.read(imageFile);
 //        Mat image = new Mat(bi.getHeight(), bi.getWidth(), CvType.CV_8UC1);

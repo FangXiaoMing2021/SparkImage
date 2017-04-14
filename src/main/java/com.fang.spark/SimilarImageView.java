@@ -43,7 +43,7 @@ public class SimilarImageView extends JFrame implements ActionListener {
     private Table similarImageTable;
     private static final int NUMBER_OF_SIMILAR_IMAGE = 10;
     private static final String IMAGE_TABLE = ImagesUtil.imageTableName();
-    private static final String SIMILAR_IMAGE_TABLE = "similarImageTable";
+    private static final String SIMILAR_IMAGE_TABLE = ImagesUtil.similarImageTableName();
     private static final int FIRST_INDEX = 0;
     private static final int IMAGE_WIDTH = 120;
     private static final int IMAGE_HEIGHT = 160;
@@ -129,7 +129,7 @@ public class SimilarImageView extends JFrame implements ActionListener {
     public void showNextImage(Table similarImageTable, Table imageTable, Get g) throws IOException {
         Result result = similarImageTable.get(g);
         List<byte[]> similarImageNameByteList = new ArrayList<byte[]>();
-        for (int i = FIRST_INDEX; i < NUMBER_OF_SIMILAR_IMAGE; i++) {
+        for (int i = FIRST_INDEX; i < result.size(); i++) {
             String similarColumnFamily = "image_" + String.valueOf(i + 1);
             byte[] similarImageByte = result.getValue(Bytes.toBytes(SIMILAR_COLUMN_FAMILY), Bytes.toBytes(similarColumnFamily));
             similarImageNameByteList.add(similarImageByte);
@@ -141,15 +141,28 @@ public class SimilarImageView extends JFrame implements ActionListener {
         similarImageGetList.add(g);
         //similarImageDistance.add("Origin" + (this.index + 1));
         similarImageDistance.add(""+(this.index + 1));
-        for (int i = FIRST_INDEX; i < NUMBER_OF_SIMILAR_IMAGE; i++) {
-            byte[] similarImageByte = similarImageNameByteList.get(i);
-            String imageName = Bytes.toString(similarImageByte);
-            String[] similarImageInfo = imageName.split("#");
-            Get get = new Get(Bytes.toBytes(similarImageInfo[FIRST_INDEX]));
-            //System.out.println(get);
-            similarImageGetList.add(get);
-            similarImageDistance.add("SIFT Distance:" + similarImageInfo[FIRST_INDEX + 1]);
+        if(similarImageByteList.size()<NUMBER_OF_SIMILAR_IMAGE){
+            for (int i = FIRST_INDEX; i < similarImageNameByteList.size(); i++) {
+                byte[] similarImageByte = similarImageNameByteList.get(i);
+                String imageName = Bytes.toString(similarImageByte);
+                String[] similarImageInfo = imageName.split("#");
+                Get get = new Get(Bytes.toBytes(similarImageInfo[FIRST_INDEX]));
+                //System.out.println(get);
+                similarImageGetList.add(get);
+                similarImageDistance.add("SIFT Distance:" + similarImageInfo[FIRST_INDEX + 1]);
+            }
+        }else{
+            for (int i = FIRST_INDEX; i < NUMBER_OF_SIMILAR_IMAGE; i++) {
+                byte[] similarImageByte = similarImageNameByteList.get(i);
+                String imageName = Bytes.toString(similarImageByte);
+                String[] similarImageInfo = imageName.split("#");
+                Get get = new Get(Bytes.toBytes(similarImageInfo[FIRST_INDEX]));
+                //System.out.println(get);
+                similarImageGetList.add(get);
+                similarImageDistance.add("SIFT Distance:" + similarImageInfo[FIRST_INDEX + 1]);
+            }
         }
+
         Result[] imageResult = imageTable.get(similarImageGetList);
 //        System.out.println(imageResult.length);
         //如果找不到图像,则抛出空指针异常
@@ -172,7 +185,10 @@ public class SimilarImageView extends JFrame implements ActionListener {
      * @throws IOException
      */
     public void displayImage(SimilarImageView frame, List<byte[]> similarImageByteList, List<String> similarImageDistance) throws IOException {
-
+        for(int i=FIRST_INDEX;i<=NUMBER_OF_SIMILAR_IMAGE;i++){
+            frame.labelList.get(i).setIcon(new ImageIcon());
+            frame.labelList.get(i).setText("");
+        }
         for (int i = FIRST_INDEX; i < similarImageByteList.size(); i++) {
             // System.out.println(similarImageByteList.get(i).length);
             BufferedImage bi = ImageIO.read(new ByteArrayInputStream(similarImageByteList.get(i)));

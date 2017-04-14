@@ -1,6 +1,6 @@
-package com.fang.spark
+package com.fang.spark.bakeup
 
-
+import com.fang.spark.ImagesUtil
 import org.apache.hadoop.hbase.client.{Put, Scan}
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.hbase.mapred.TableOutputFormat
@@ -8,7 +8,7 @@ import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil
 import org.apache.hadoop.hbase.util.{Base64, Bytes}
 import org.apache.hadoop.mapred.JobConf
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.SparkContext
 import org.opencv.core.Core
 
 /**

@@ -9,6 +9,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.spark.SparkConf
 import org.opencv.core._
 import org.opencv.features2d.{DescriptorExtractor, FeatureDetector}
+import org.opencv.highgui.Highgui
 import org.opencv.imgproc.Imgproc
 import sun.misc.{BASE64Decoder, BASE64Encoder}
 
@@ -18,19 +19,19 @@ import sun.misc.{BASE64Decoder, BASE64Encoder}
 object ImagesUtil {
   //n01491361  n01984695
   //val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n01491361"
-  val imagePath = "hdfs://202.114.30.171:9000/imagesNet/n01530575"
+  val imagePath = "hdfs://fang-ubuntu:9000/imagesNet/n01530575"
   //val imagePath = "/home/fang/images/n01984695"n01491361
   //hdfs dfs -rm -r /spark/kmeansModel
   //val imagePath = "/home/fang/imageTest"
   //Exception in thread "main" org.apache.hadoop.security.AccessControlException:
   // Permission denied: user=user, access=WRITE, inode="/kmeansModel/metadata/_temporary/0":hadoop:supergroup:drwxr-xr-x
 
-  val kmeansModelPath = "hdfs://202.114.30.171:9000/user/kmeansModel"
+  val kmeansModelPath = "hdfs://fang-ubuntu:9000/saveKmeans/kmeansModel"
   private[spark] val encoder = new BASE64Encoder
   private[spark] val decoder = new BASE64Decoder
   //val imageTableName = "imageNetTable"
-  val imageTableName = "imagesTest"
-
+  val imageTableName = "imagesTable"
+  val similarImageTableName = "similarImageTable"
   def loadHBaseConf(): Configuration ={
     val hbaseConf = HBaseConfiguration.create()
     // Caused by: java.lang.IllegalArgumentException: KeyValue size too large
@@ -44,7 +45,7 @@ object ImagesUtil {
   def loadSparkConf(appName:String): SparkConf ={
     val sparkConf = new SparkConf()
       .setAppName(appName)
-      //.setMaster("local[4]")
+      .setMaster("local[4]")
       //.setMaster("spark://fang-ubuntu:7077")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     sparkConf
@@ -446,5 +447,41 @@ object ImagesUtil {
       }
     }
   }
+
+//  def getImageHARRISTwoArray(image: Array[Byte]): Option[Array[Byte]] = {
+//    try {
+//      val imageMat = Highgui.imdecode(new MatOfByte(image), Highgui.CV_LOAD_IMAGE_UNCHANGED)
+//      val desc = new Mat
+//      val fd = FeatureDetector.create(FeatureDetector.HARRIS)
+//      val mkp = new MatOfKeyPoint
+//      fd.detect(imageMat, mkp)
+//      val de = DescriptorExtractor.create(DescriptorExtractor.SIFT)
+//      de.compute(imageMat, mkp, desc)
+//      imageMat.release()
+//      mkp.release()
+//      if (desc.rows() != 0) {
+//        val matArray = new Array[Array[Double]](desc.rows())
+//        for (i <- 0 to desc.rows()) {
+//          //val tmpArray = new Array[Double](desc.cols())
+//          desc.get(i, i * 128, matArray(i))
+//        }
+//        Some(Utils.serializeMat(desc))
+//      } else {
+//        println("************************No Harris Feature*********************************")
+//        None
+//      }
+//    }
+//    catch {
+//      case iae: IllegalArgumentException =>
+//        println(iae.getMessage)
+//        None
+//      case cve: CvException =>
+//        println(cve.getMessage)
+//        None
+//      case _: Exception =>
+//        println("have a Exception in getImageHARRIS")
+//        None
+//    }
+//  }
 
 }

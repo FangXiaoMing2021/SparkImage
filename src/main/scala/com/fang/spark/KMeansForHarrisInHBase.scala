@@ -13,9 +13,9 @@ import org.apache.spark.SparkContext
 import org.apache.spark.mllib.clustering.{KMeans, KMeansModel}
 import org.apache.spark.mllib.linalg.Vectors
 
-object KMeansForSiftInHBase extends App {
+object KMeansForHarrisInHBase extends App {
   val beginKMeans = System.currentTimeMillis()
-  val sparkConf = ImagesUtil.loadSparkConf("KMeansForSiftInHBase")
+  val sparkConf = ImagesUtil.loadSparkConf("KMeansForHarrisInHBase")
   val sc = new SparkContext(sparkConf)
   sc.setLogLevel("WARN")
   val readSiftTime = System.currentTimeMillis()
@@ -33,7 +33,7 @@ object KMeansForSiftInHBase extends App {
   val hbaseRDD = sc.newAPIHadoopRDD(hbaseConf, classOf[TableInputFormat],
     classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
     classOf[org.apache.hadoop.hbase.client.Result])
-  ImagesUtil.printComputeTime(readSiftTime, "readSiftTime")
+  ImagesUtil.printComputeTime(readSiftTime, "readHarrisTime")
   val transformSift = System.currentTimeMillis()
   val siftRDD = hbaseRDD.map {
     result =>
@@ -42,7 +42,7 @@ object KMeansForSiftInHBase extends App {
       //val harrisByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("harris"))
       //空指针异常
       if(siftByte!=null){
-        val featureTwoDim = ImagesUtil.siftArr2TowDim(siftByte)
+        val featureTwoDim = Utils.ByteToTwoArrayHarris(siftByte)
         (result._2.getRow, featureTwoDim)
       }else{
         null
@@ -50,13 +50,13 @@ object KMeansForSiftInHBase extends App {
   }.filter(_!=null)
   //siftRDD.persist(StorageLevel.MEMORY_AND_DISK_SER_2)
   val siftDenseRDD = siftRDD.flatMap(_._2)
-    .map(data => Vectors.dense(data.map(i => i.toDouble))).cache()
+    .map(data => Vectors.dense(data)).cache()
     //.persist(StorageLevel.MEMORY_AND_DISK)
-  ImagesUtil.printComputeTime(transformSift, "tranform sift")
+  ImagesUtil.printComputeTime(transformSift, "tranform harris")
   val kmeansTime = System.currentTimeMillis()
-  val numClusters = 3
-  val numIterations = 3
-  val runTimes = 1
+  val numClusters = 300
+  val numIterations = 100
+  val runTimes = 3
   var clusterIndex: Int = 0
   // java.lang.IllegalArgumentException: Size exceeds Integer.MAX_VALUE
   val clusters: KMeansModel = KMeans.train(siftDenseRDD, numClusters, numIterations, runTimes)

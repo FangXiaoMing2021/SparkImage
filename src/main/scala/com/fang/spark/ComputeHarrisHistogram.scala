@@ -14,10 +14,10 @@ import org.apache.spark.mllib.linalg.Vectors
 /**
   * Created by fang on 17-1-5.
   */
-object ComputeHistogram {
+object ComputeHarrisHistogram {
   def main(args: Array[String]): Unit = {
     val beginComputeHistogram = System.currentTimeMillis()
-    val sparkConf = ImagesUtil.loadSparkConf("ComputeHistogram")
+    val sparkConf = ImagesUtil.loadSparkConf("ComputeHarrisHistogram")
 
     val sc = new SparkContext(sparkConf)
     sc.setLogLevel("WARN")
@@ -28,7 +28,6 @@ object ComputeHistogram {
 
     val scan = new Scan()
     scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
-    //scan.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"))
     val proto = ProtobufUtil.toScan(scan)
     val ScanToString = Base64.encodeBytes(proto.toByteArray())
     hbaseConf.set(TableInputFormat.SCAN, ScanToString)
@@ -36,17 +35,14 @@ object ComputeHistogram {
     val hbaseRDD = sc.newAPIHadoopRDD(hbaseConf, classOf[TableInputFormat],
       classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
       classOf[org.apache.hadoop.hbase.client.Result])
-    ImagesUtil.printComputeTime(readSiftTime, "read sift")
+    ImagesUtil.printComputeTime(readSiftTime, "read harris")
     val transformSift = System.currentTimeMillis()
     val siftRDD = hbaseRDD.map {
       result => {
         val siftByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("harris"))
-        // val siftTwoDim = siftArr2TowDim(siftByte)
-        //(result._2.getRow, siftTwoDim)
-        //val harrisByte = result._2.getValue(Bytes.toBytes("image"), Bytes.toBytes("harris"))
-        var featureTwoDim:Array[Array[Float]] = null
+        var featureTwoDim:Array[Array[Double]] = null
         if(siftByte!=null){
-          featureTwoDim = ImagesUtil.siftArr2TowDim(siftByte)
+          featureTwoDim = Utils.ByteToTwoArrayHarris(siftByte)
         }
         (result._2.getRow, featureTwoDim)
       }
@@ -69,7 +65,7 @@ object ComputeHistogram {
           */
         val histogramArray = new Array[Int](myKmeansModel.clusterCenters.length)
         for (i <- 0 to result._2.length - 1) {
-          val predictedClusterIndex: Int = myKmeansModel.predict(Vectors.dense(result._2(i).map(i => i.toDouble)))
+          val predictedClusterIndex: Int = myKmeansModel.predict(Vectors.dense(result._2(i)))
           histogramArray(predictedClusterIndex) = histogramArray(predictedClusterIndex) + 1
         }
         val put: Put = new Put(result._1)

@@ -18,7 +18,7 @@ import org.opencv.core.Core
   * 修改了foreachPartition转换操作为map
   * ./spark-submit --master spark://fang-ubuntu:7077 --class com.fang.spark.HBaseUpLoadImages --jars opencv-2413.jar MyProject.jar
   */
-object SaveImagesInHBase {
+object SaveImagesAndHarrisInHBase {
   def main(args: Array[String]): Unit = {
 
     val sparkConf = ImagesUtil.loadSparkConf("SaveSiftInHBase")
@@ -50,20 +50,13 @@ object SaveImagesInHBase {
         val put: Put = new Put(Bytes.toBytes(imageName))
         put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), imageBinary)
         put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("path"), Bytes.toBytes(imageFile._1))
-//        提取sift特征
-        val sift = ImagesUtil.getImageSift(imageBinary)
-        if (!sift.isEmpty) {
-          put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("sift"), sift.get)
+        //提取harris特征
+        val harris = Utils.getImageHARRISTwoDim(imageBinary)
+        if(harris.length!=0){
+          put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"), ImagesUtil.ObjectToBytes(harris))
         }else{
-          println(imageName+"no sift feature")
+          println(imageName+"no harris feature")
         }
-     //   提取HARRIS特征
-//        val harris = ImagesUtil.getImageHARRIS(imageBinary)
-//        if (!harris.isEmpty) {
-//          put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"), harris.get)
-//        }else{
-//          println(imageName+"no harris feature")
-//        }
         (new ImmutableBytesWritable, put)
       }
     }
@@ -71,8 +64,8 @@ object SaveImagesInHBase {
     //保存时间
     val saveImageTime = System.currentTimeMillis()
     // imagesResult.saveAsNewAPIHadoopDataset(jobConf)
-    imagesResult.saveAsHadoopDataset(jobConf)
-    //imagesResult.count()
+    //imagesResult.saveAsHadoopDataset(jobConf)
+    imagesResult.count()
     ImagesUtil.printComputeTime(saveImageTime, "save image time")
     sparkContext.stop()
   }
