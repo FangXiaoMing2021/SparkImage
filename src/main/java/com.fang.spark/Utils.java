@@ -1,9 +1,6 @@
 package com.fang.spark;
 
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfByte;
-import org.opencv.core.MatOfKeyPoint;
+import org.opencv.core.*;
 import org.opencv.features2d.DescriptorExtractor;
 import org.opencv.features2d.FeatureDetector;
 import org.opencv.highgui.Highgui;
@@ -200,6 +197,7 @@ public class Utils {
      * @throws IOException
      */
     public static double[][] getImageHARRISTwoDim(byte[] image) throws IOException {
+        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
         Long startTime = System.currentTimeMillis();
         Mat imageMat = Highgui.imdecode(new MatOfByte(image), Highgui.CV_LOAD_IMAGE_COLOR);
         Mat desc = new Mat();

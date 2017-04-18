@@ -21,7 +21,7 @@ import org.opencv.core.Core
 object SaveImagesAndHarrisInHBase {
   def main(args: Array[String]): Unit = {
 
-    val sparkConf = ImagesUtil.loadSparkConf("SaveSiftInHBase")
+    val sparkConf = ImagesUtil.loadSparkConf("SaveImagesAndHarrisInHBase")
 
     val sparkContext = new SparkContext(sparkConf)
     //加载HBase配置
@@ -31,9 +31,9 @@ object SaveImagesAndHarrisInHBase {
     //设置job的输出格式
     jobConf.setOutputFormat(classOf[TableOutputFormat])
     val begUpload = System.currentTimeMillis()
-    val imagesRDD = sparkContext.binaryFiles(ImagesUtil.imagePath)
+    val imagesRDD = sparkContext.binaryFiles(ImagesUtil.imagePath,6)
     ImagesUtil.printComputeTime(begUpload, "upload image")
-    //统计计算sift时间
+    //统计计算harris时间
     val begComputeSift = System.currentTimeMillis()
 //    imagesRDD.foreachPartition{
 //      _=>
@@ -42,7 +42,7 @@ object SaveImagesAndHarrisInHBase {
     val imagesResult = imagesRDD.map {
       imageFile => {
         //加载Opencv库,在每个分区都需加载
-        System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
+        //System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
         val tempPath = imageFile._1.split("/")
         val len = tempPath.length
         val imageName = tempPath(len - 1)
@@ -60,12 +60,12 @@ object SaveImagesAndHarrisInHBase {
         (new ImmutableBytesWritable, put)
       }
     }
-    ImagesUtil.printComputeTime(begComputeSift, "compute sift")
+    ImagesUtil.printComputeTime(begComputeSift, "compute harris")
     //保存时间
     val saveImageTime = System.currentTimeMillis()
     // imagesResult.saveAsNewAPIHadoopDataset(jobConf)
-    //imagesResult.saveAsHadoopDataset(jobConf)
-    imagesResult.count()
+    imagesResult.saveAsHadoopDataset(jobConf)
+    //imagesResult.count()
     ImagesUtil.printComputeTime(saveImageTime, "save image time")
     sparkContext.stop()
   }

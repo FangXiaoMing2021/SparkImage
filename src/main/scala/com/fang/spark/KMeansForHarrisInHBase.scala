@@ -50,12 +50,12 @@ object KMeansForHarrisInHBase extends App {
   }.filter(_!=null)
   //siftRDD.persist(StorageLevel.MEMORY_AND_DISK_SER_2)
   val siftDenseRDD = siftRDD.flatMap(_._2)
-    .map(data => Vectors.dense(data)).cache()
+    .map(data => Vectors.dense(data)).repartition(40).cache()
     //.persist(StorageLevel.MEMORY_AND_DISK)
   ImagesUtil.printComputeTime(transformSift, "tranform harris")
   val kmeansTime = System.currentTimeMillis()
   val numClusters = 300
-  val numIterations = 100
+  val numIterations = 30
   val runTimes = 3
   var clusterIndex: Int = 0
   // java.lang.IllegalArgumentException: Size exceeds Integer.MAX_VALUE

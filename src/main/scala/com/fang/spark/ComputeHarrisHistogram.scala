@@ -48,7 +48,7 @@ object ComputeHarrisHistogram {
       }
     }.filter{tuple=>tuple._2!=null}
 
-    ImagesUtil.printComputeTime(transformSift, "transform sift")
+    ImagesUtil.printComputeTime(transformSift, "transform harris")
     val jobConf = new JobConf(hbaseConf)
     jobConf.setOutputFormat(classOf[TableOutputFormat])
     jobConf.set(TableOutputFormat.OUTPUT_TABLE, tableName)
