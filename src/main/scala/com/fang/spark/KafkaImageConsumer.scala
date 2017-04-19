@@ -19,6 +19,7 @@ import org.opencv.core.Core
 /**
   * Created by fang on 16-12-21.
   * 从Kafka获取图像数据,计算该图像的sift直方图,和HBase中的图像直方图对比,输出最相近的图像名
+  * ./bin/kafka-topics.sh --create --topic image --replication-factor 2 --partitions 6 --zookeeper fang-ubuntu:2181
   */
 object KafkaImageConsumer {
 
@@ -65,7 +66,7 @@ object KafkaImageConsumer {
     println("============" + histogramFromHBaseRDD.count() + "===========")
 
     //从Kafka接收图像数据
-    val topics = Set("image_topic")
+    val topics = Set("image_test")
     val kafkaParams = Map[String, String](
       "metadata.broker.list" -> "fang-ubuntu:9092,fei-ubuntu:9092,kun-ubuntu:9092"
     )
@@ -90,7 +91,7 @@ object KafkaImageConsumer {
     //    }
     //imageTupleDStream.cache()
     //获取接受图像的名称和特征直方图
-    val histogramFromKafkaDStream = imageTupleDStream.map(tuple => (tuple._1, tuple._4))
+    val histogramFromKafkaDStream = imageTupleDStream.map(tuple => (tuple._1, tuple._4)).repartition(40)
     //    //获取最相似的n张图片
     val topNSimilarImageDStream = histogramFromKafkaDStream.transform {
       imageHistogramRDD => {
@@ -121,19 +122,19 @@ object KafkaImageConsumer {
 
     }
 
-    topNSimilarImageDStream.foreachRDD{
-      rdd=>saveSimilarImageName(rdd)
-    }
-    imageTupleDStream.foreachRDD{
-      rdd=>saveImagesFromKafka(rdd)
-    }
+//    topNSimilarImageDStream.foreachRDD{
+//      rdd=>saveSimilarImageName(rdd)
+//    }
+//    imageTupleDStream.foreachRDD{
+//      rdd=>saveImagesFromKafka(rdd)
+//    }
 //    println("该批次数据为:"+histogramFromKafkaDStream.count())
-//        topNSimilarImageDStream.foreachRDD {
-//          // var i:Long = 0
-//          rdd => {
-//            println("完成")
-//          }
-//        }
+    topNSimilarImageDStream.foreachRDD {
+      // var i:Long = 0
+      rdd => {
+        println("完成该批次时间为："+System.currentTimeMillis())
+      }
+    }
 
     //启动程序
     ssc.start()

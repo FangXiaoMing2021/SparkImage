@@ -50,7 +50,7 @@ object KMeansForHarrisInHBase extends App {
   }.filter(_!=null)
   //siftRDD.persist(StorageLevel.MEMORY_AND_DISK_SER_2)
   val siftDenseRDD = siftRDD.flatMap(_._2)
-    .map(data => Vectors.dense(data)).repartition(40).cache()
+    .map(data => Vectors.dense(data)).repartition(60).cache()
     //.persist(StorageLevel.MEMORY_AND_DISK)
   ImagesUtil.printComputeTime(transformSift, "tranform harris")
   val kmeansTime = System.currentTimeMillis()
