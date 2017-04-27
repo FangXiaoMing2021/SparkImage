@@ -31,7 +31,7 @@ object SaveImagesAndHarrisInHBase {
     //设置job的输出格式
     jobConf.setOutputFormat(classOf[TableOutputFormat])
     val begUpload = System.currentTimeMillis()
-    val imagesRDD = sparkContext.binaryFiles(ImagesUtil.imagePath,3)
+    val imagesRDD = sparkContext.binaryFiles(ImagesUtil.imagePath,6)
     ImagesUtil.printComputeTime(begUpload, "upload image")
     //统计计算harris时间
     val begComputeSift = System.currentTimeMillis()

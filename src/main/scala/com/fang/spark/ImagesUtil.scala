@@ -19,18 +19,18 @@ import sun.misc.{BASE64Decoder, BASE64Encoder}
 object ImagesUtil {
   //n01491361  n01984695
   //val imagePath = "file:///home/hadoop/ILSVRC2015/Data/CLS-LOC/train/n01491361"
-  val imagePath = "hdfs://fang-ubuntu:9000/imagesNet/n015*"
+  val imagePath = "hdfs://fang-ubuntu:9000/imagesNet/*/*"
   //val imagePath = "/home/fang/images/n01984695"n01491361
   //hdfs dfs -rm -r /spark/kmeansModel
   //val imagePath = "/home/fang/imageTest"
   //Exception in thread "main" org.apache.hadoop.security.AccessControlException:
   // Permission denied: user=user, access=WRITE, inode="/kmeansModel/metadata/_temporary/0":hadoop:supergroup:drwxr-xr-x
 
-  val kmeansModelPath = "hdfs://fang-ubuntu:9000/saveKmeans/kmeansModelForImageTest"
+  val kmeansModelPath = "hdfs://fang-ubuntu:9000/saveKmeans/kmeansModelForImageNet"
   private[spark] val encoder = new BASE64Encoder
   private[spark] val decoder = new BASE64Decoder
-  //val imageTableName = "imageNetTable"
-  val imageTableName = "imagesTest"
+  val imageTableName = "imageNetTable"
+  //val imageTableName = "imagesTest"
   val similarImageTableName = "similarImageTable"
   def loadHBaseConf(): Configuration ={
     val hbaseConf = HBaseConfiguration.create()
@@ -39,6 +39,11 @@ object ImagesUtil {
     hbaseConf.set("hbase.client.keyvalue.maxsize","524288000");//最大500m
     hbaseConf.set("hbase.zookeeper.property.clientPort", "2181")
     hbaseConf.set("hbase.zookeeper.quorum", "fang-ubuntu,fei-ubuntu,kun-ubuntu")
+    //hbaseConf.set("hbase.client.pause", "50");
+    //hbaseConf.set("hbase.client.retries.number", "3");
+    hbaseConf.set("hbase.rpc.timeout", "2000000");
+    hbaseConf.set("hbase.client.operation.timeout", "300000");
+    hbaseConf.set("hbase.client.scanner.timeout.period", "600000");
     hbaseConf
   }
 

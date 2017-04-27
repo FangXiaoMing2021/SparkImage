@@ -66,7 +66,7 @@ object KafkaImageConsumer {
     println("============" + histogramFromHBaseRDD.count() + "===========")
 
     //从Kafka接收图像数据
-    val topics = Set("image_test")
+    val topics = Set("image_topic")
     val kafkaParams = Map[String, String](
       "metadata.broker.list" -> "fang-ubuntu:9092,fei-ubuntu:9092,kun-ubuntu:9092"
     )
@@ -91,7 +91,7 @@ object KafkaImageConsumer {
     //    }
     //imageTupleDStream.cache()
     //获取接受图像的名称和特征直方图
-    val histogramFromKafkaDStream = imageTupleDStream.map(tuple => (tuple._1, tuple._4)).repartition(40)
+    val histogramFromKafkaDStream = imageTupleDStream.map(tuple => (tuple._1, tuple._4)).repartition(30)
     //    //获取最相似的n张图片
     val topNSimilarImageDStream = histogramFromKafkaDStream.transform {
       imageHistogramRDD => {
@@ -122,19 +122,19 @@ object KafkaImageConsumer {
 
     }
 
-//    topNSimilarImageDStream.foreachRDD{
-//      rdd=>saveSimilarImageName(rdd)
-//    }
+    topNSimilarImageDStream.foreachRDD{
+      rdd=>printSimilarImageName(rdd)
+    }
 //    imageTupleDStream.foreachRDD{
 //      rdd=>saveImagesFromKafka(rdd)
 //    }
 //    println("该批次数据为:"+histogramFromKafkaDStream.count())
-    topNSimilarImageDStream.foreachRDD {
-      // var i:Long = 0
-      rdd => {
-        println("完成该批次时间为："+System.currentTimeMillis())
-      }
-    }
+//    topNSimilarImageDStream.foreachRDD {
+//      // var i:Long = 0
+//      rdd => {
+//        println("完成该批次时间为："+System.currentTimeMillis())
+//      }
+//    }
 
     //启动程序
     ssc.start()
@@ -223,6 +223,28 @@ object KafkaImageConsumer {
   }
 
   /**
+    * 打印查询到的相似图像结果
+    *
+    * @param rdd
+    */
+  def printSimilarImageName(rdd: RDD[(String, Seq[(String, Double)])]): Unit = {
+    if (!rdd.isEmpty()) {
+      rdd.foreach {
+        tuple => {
+          var similarImages = "检索的图像名称："+tuple._1 +" 相似图像名称："
+          var i = 0
+          for (tup <- tuple._2) {
+            similarImages = similarImages+"image" + "_" + i+":"+tup._1 + "#" + tup._2
+            i = i + 1
+          }
+          println(similarImages)
+        }
+      }
+      println("================="+System.currentTimeMillis()+"======打印相似图像完成=======================")
+    }
+  }
+
+  /**
     * 保存查询到的相似图像结果
     *
     * @param rdd
@@ -250,7 +272,7 @@ object KafkaImageConsumer {
       }.saveAsHadoopDataset(jobConf)
       //rdd.map(tuple=>tuple._1+" 获得相似图像的时间 "+System.currentTimeMillis()).saveAsTextFile("/spark/saveSimilarImageTime")
       //rdd.foreach(tuple => println(tuple._1 + " 获得相似图像的时间 " + System.currentTimeMillis()))
-      println("=======================保存相似图像完成=======================")
+      println("================="+System.currentTimeMillis()+"======保存相似图像完成=======================")
     }
   }
 
