@@ -28,7 +28,7 @@ object KafkaImageConsumer {
     val sparkConf = ImagesUtil.loadSparkConf("KafkaImageProcess")
 
     //批次间隔1s
-    val ssc = new StreamingContext(sparkConf, Milliseconds(1000))
+    val ssc = new StreamingContext(sparkConf, Milliseconds(1500))
     ssc.checkpoint("checkpoint")
     ssc.sparkContext.setLogLevel("WARN")
     //连接HBase参数配置
@@ -66,7 +66,7 @@ object KafkaImageConsumer {
     println("============" + histogramFromHBaseRDD.count() + "===========")
 
     //从Kafka接收图像数据
-    val topics = Set("image_topic")
+    val topics = Set(ImagesUtil.imageTopicName)
     val kafkaParams = Map[String, String](
       "metadata.broker.list" -> "fang-ubuntu:9092,fei-ubuntu:9092,kun-ubuntu:9092"
     )
@@ -91,7 +91,7 @@ object KafkaImageConsumer {
     //    }
     //imageTupleDStream.cache()
     //获取接受图像的名称和特征直方图
-    val histogramFromKafkaDStream = imageTupleDStream.map(tuple => (tuple._1, tuple._4)).repartition(30)
+    val histogramFromKafkaDStream = imageTupleDStream.map(tuple => (tuple._1, tuple._4)).repartition(50)
     //    //获取最相似的n张图片
     val topNSimilarImageDStream = histogramFromKafkaDStream.transform {
       imageHistogramRDD => {
@@ -217,7 +217,7 @@ object KafkaImageConsumer {
         (tuple._1._1, (tuple._2._1, cosine))
       }
     }.filter {
-      cosineTuple => cosineTuple._2._2 > 0.95
+      cosineTuple => cosineTuple._2._2 > 0.4
     }
     cosineOfReceiveImage
   }
@@ -234,7 +234,7 @@ object KafkaImageConsumer {
           var similarImages = "检索的图像名称："+tuple._1 +" 相似图像名称："
           var i = 0
           for (tup <- tuple._2) {
-            similarImages = similarImages+"image" + "_" + i+":"+tup._1 + "#" + tup._2
+            similarImages = similarImages+"image" + "_" + i+":"+tup._1 + "#" + tup._2+"--"
             i = i + 1
           }
           println(similarImages)

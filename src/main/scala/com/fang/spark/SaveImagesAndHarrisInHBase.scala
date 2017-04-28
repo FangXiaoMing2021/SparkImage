@@ -31,41 +31,41 @@ object SaveImagesAndHarrisInHBase {
     //设置job的输出格式
     jobConf.setOutputFormat(classOf[TableOutputFormat])
     val begUpload = System.currentTimeMillis()
-    val imagesRDD = sparkContext.binaryFiles(ImagesUtil.imagePath,6)
+    val imagesRDD = sparkContext.binaryFiles(ImagesUtil.imagePath, 50)
     ImagesUtil.printComputeTime(begUpload, "upload image")
     //统计计算harris时间
     val begComputeSift = System.currentTimeMillis()
-//    imagesRDD.foreachPartition{
-//      _=>
-//        System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
-//    }
+    //    imagesRDD.foreachPartition{
+    //      _=>
+    //        System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
+    //    }
     val imagesResult = imagesRDD.map {
-      imageFile => {
-        //加载Opencv库,在每个分区都需加载
-        //System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
-        val tempPath = imageFile._1.split("/")
-        val len = tempPath.length
-        val imageName = tempPath(len - 1)
-        val imageBinary: scala.Array[Byte] = imageFile._2.toArray()
-        val put: Put = new Put(Bytes.toBytes(imageName))
-        put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), imageBinary)
-        put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("path"), Bytes.toBytes(imageFile._1))
-        //提取harris特征
-        val harris = Utils.getImageHARRISTwoDim(imageBinary)
-        if(harris.length!=0){
-          put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"), ImagesUtil.ObjectToBytes(harris))
-        }else{
-          println(imageName+"no harris feature")
-        }
-        (new ImmutableBytesWritable, put)
-      }
+          imageFile => {
+            //加载Opencv库,在每个分区都需加载
+            //System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
+            val tempPath = imageFile._1.split("/")
+            val len = tempPath.length
+            val imageName = tempPath(len - 1)
+            val imageBinary: scala.Array[Byte] = imageFile._2.toArray()
+            val put: Put = new Put(Bytes.toBytes(imageName))
+            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("binary"), imageBinary)
+            put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("path"), Bytes.toBytes(imageFile._1))
+            //提取harris特征
+            val harris = Utils.getImageHARRISTwoDim(imageBinary)
+            if (harris.length != 0) {
+              put.addColumn(Bytes.toBytes("image"), Bytes.toBytes("harris"), ImagesUtil.ObjectToBytes(harris))
+            } else {
+              println(imageName + "no harris feature")
+            }
+            (new ImmutableBytesWritable, put)
+          }
     }
     ImagesUtil.printComputeTime(begComputeSift, "compute harris")
     //保存时间
     val saveImageTime = System.currentTimeMillis()
     // imagesResult.saveAsNewAPIHadoopDataset(jobConf)
-    imagesResult.saveAsHadoopDataset(jobConf)
-    //imagesResult.count()
+    //imagesResult.saveAsHadoopDataset(jobConf)
+    imagesResult.count()
     ImagesUtil.printComputeTime(saveImageTime, "save image time")
     sparkContext.stop()
   }
